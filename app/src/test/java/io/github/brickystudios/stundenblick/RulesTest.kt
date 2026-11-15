@@ -101,11 +101,12 @@ class RulesTest {
         val before = now.map { if (it.cancelled) it.copy(states = setOf("REGULAR")) else it }
         val msgs = Changes.between(before, now, master, emptySet())
         assertEquals(1, msgs.size)
-        assertEquals("Di. 17.11., 3. Std.: Ge entfällt", msgs.single())
+        assertEquals("Di. 17.11., 3. Std.: Ge entfällt", msgs.single().second)
+        assertEquals("the pair names the period", now.single { it.cancelled }.id, msgs.single().first)
         assertTrue("hidden subject stays quiet", Changes.between(before, now, master, setOf(26L)).isEmpty())
         // a new special period that was not there before
         val withoutExtra = now.filterNot { it.additional }
-        assertTrue(Changes.between(withoutExtra, now, master, emptySet()).single().contains("Zusatzstunde"))
+        assertTrue(Changes.between(withoutExtra, now, master, emptySet()).single().second.contains("Zusatzstunde"))
     }
 
     @Test fun describeNamesSubstituteAndRoom() {

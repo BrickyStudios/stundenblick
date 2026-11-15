@@ -10,6 +10,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -80,12 +93,13 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Screen { TIMETABLE, PICK, PICK_OWN, SETTINGS }
+private enum class Screen { TABS, PICK, PICK_OWN, SETTINGS, HISTORY, ROOMS }
 
 @Composable
 private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchool?>) {
     val ctx = LocalContext.current
-    var screen by rememberSaveable { mutableStateOf(Screen.TIMETABLE) }
+    var screen by rememberSaveable { mutableStateOf(Screen.TABS) }
+    var tab by rememberSaveable { mutableStateOf(if (repo.own.value != null) "heute" else "plan") }
     var shownKey by rememberSaveable { mutableStateOf(repo.last?.key) }
     val profile = repo.profile.value
     val own = repo.own.value
@@ -94,15 +108,16 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
     LaunchedEffect(profile) {
         if (profile != null) {
             ChangeJob.schedule(ctx, repo.notify) // heals a switch that is on without its job (e.g. after an update)
+            BreakInfo.schedule(ctx)
             repo.refreshMaster()
             if (repo.updates) Updater.check(ctx, manual = false)
         }
     }
 
     link.value?.let { l ->
-        return LinkConfirm(repo, l, onDone = { link.value = null; screen = Screen.TIMETABLE; shownKey = null })
+        return LinkConfirm(repo, l, onDone = { link.value = null; screen = Screen.TABS; tab = "heute"; shownKey = null })
     }
-    if (profile == null) return LoginScreen(repo) { screen = Screen.TIMETABLE; shownKey = null }
+    if (profile == null) return LoginScreen(repo) { screen = Screen.TABS; tab = "heute"; shownKey = null }
 
     // shown plan: last choice, else the own plan; resolve names from master data
     val shown: Element? = shownKey?.let { key ->
@@ -112,17 +127,44 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
     fun show(e: Element) {
         shownKey = e.key
         repo.last = e
-        screen = Screen.TIMETABLE
+        screen = Screen.TABS
+        tab = "plan"
     }
 
-    BackHandler(enabled = screen != Screen.TIMETABLE) { screen = Screen.TIMETABLE }
-    when {
-        screen == Screen.PICK -> PickerScreen(repo, ownMode = false, onBack = { screen = Screen.TIMETABLE }) { show(it) }
-        screen == Screen.PICK_OWN -> PickerScreen(repo, ownMode = true, onBack = { screen = Screen.TIMETABLE }) { repo.setOwn(it); show(repo.own.value!!) }
-        screen == Screen.SETTINGS && shown != null -> SettingsScreen(repo, shown, onBack = { screen = Screen.TIMETABLE }, onSetOwn = { screen = Screen.PICK_OWN },
-            onLoggedOut = { screen = Screen.TIMETABLE; shownKey = null })
-        shown == null -> OwnMissing(profile, onSetOwn = { screen = Screen.PICK_OWN }, onPick = { screen = Screen.PICK }, onSettings = { screen = Screen.SETTINGS })
-        else -> TimetableScreen(repo, shown, onPick = { screen = Screen.PICK }, onSettings = { screen = Screen.SETTINGS })
+    BackHandler(enabled = screen != Screen.TABS || tab != "heute") { if (screen != Screen.TABS) screen = Screen.TABS else tab = "heute" }
+    when (screen) {
+        Screen.PICK -> PickerScreen(repo, ownMode = false, onBack = { screen = Screen.TABS }) { show(it) }
+        Screen.PICK_OWN -> PickerScreen(repo, ownMode = true, onBack = { screen = Screen.TABS }) { repo.setOwn(it); show(repo.own.value!!) }
+        Screen.SETTINGS -> SettingsScreen(repo, shown, onBack = { screen = Screen.TABS }, onSetOwn = { screen = Screen.PICK_OWN },
+            onLoggedOut = { screen = Screen.TABS; tab = "heute"; shownKey = null })
+        Screen.HISTORY -> VerlaufScreen(repo) { screen = Screen.TABS }
+        Screen.ROOMS -> RoomFinderScreen(repo) { screen = Screen.TABS }
+        Screen.TABS -> Scaffold(
+            contentWindowInsets = WindowInsets(0),
+            bottomBar = {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                    listOf(Triple("heute", "Heute", Icons.Default.Home), Triple("plan", "Plan", Icons.Default.DateRange), Triple("mehr", "Mehr", Icons.Default.Menu))
+                        .forEach { (id, label, icon) ->
+                            val count = if (id == "mehr") repo.history.value.count { !it.seen } else 0
+                            NavigationBarItem(
+                                selected = tab == id, onClick = { tab = id },
+                                icon = { if (count > 0) BadgedBox(badge = { Badge { Text("$count") } }) { Icon(icon, null) } else Icon(icon, null) },
+                                label = { Text(label) },
+                            )
+                        }
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.background,
+        ) { pad ->
+            Box(Modifier.padding(pad).consumeWindowInsets(pad)) {
+                when {
+                    tab == "heute" -> HeuteScreen(repo, onOpenPlan = { own?.let(::show) }, onHistory = { screen = Screen.HISTORY }, onSetOwn = { screen = Screen.PICK_OWN })
+                    tab == "mehr" -> MehrScreen(repo, onHistory = { screen = Screen.HISTORY }, onRooms = { screen = Screen.ROOMS }, onSettings = { screen = Screen.SETTINGS })
+                    shown == null -> OwnMissing(profile, onSetOwn = { screen = Screen.PICK_OWN }, onPick = { screen = Screen.PICK }, onSettings = { screen = Screen.SETTINGS })
+                    else -> TimetableScreen(repo, shown, onPick = { screen = Screen.PICK }, onSettings = { screen = Screen.SETTINGS }, onOpen = ::show)
+                }
+            }
+        }
     }
 
     update?.let { u ->

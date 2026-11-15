@@ -56,7 +56,10 @@ data class Period(
     val info: String = "",
     val exam: String? = null,
     val color: String? = null,
+    /** the period ids a double-lesson block stands for (empty: just [id]) */
+    val parts: List<Long> = emptyList(),
 ) {
+    val ids get() = parts.ifEmpty { listOf(id) }
     val cancelled get() = "CANCELLED" in states
     val isExam get() = exam != null || "EXAM" in states
     val additional get() = "ADDITIONAL" in states

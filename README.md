@@ -34,15 +34,16 @@
 
 ## Was die App kann
 
-- **Jeder freigegebene Plan:** eigene Klasse, andere Klassen, Lehrkräfte, Räume, Fächer, mit Suche und Favoriten.
-- **Änderungen auf einen Blick:** Entfall rot und durchgestrichen, Vertretung und Raumänderung orange mit dem alten Namen daneben, Klausur blau, Zusatzstunde hellblau.
-- **Woche oder Tag:** Wochenraster mit Wischen und Jetzt-Linie, Tagesliste mit vollen Namen.
+- **Heute-Seite:** jetzige und nächste Stunde mit Raum und Restminuten, Änderungen seit gestern, nach Schulschluss der nächste Schultag, die Woche in Zahlen und der Ferien-Countdown.
+- **Jeder freigegebene Plan:** eigene Klasse, andere Klassen, Lehrkräfte, Räume, Fächer, mit Suche und Favoriten. Über fremden Plänen steht, wo die Lehrkraft oder Klasse gerade ist. Namen in den Details öffnen deren Plan.
+- **Änderungen auf einen Blick:** Entfall rot und durchgestrichen, Vertretung und Raumänderung orange mit dem alten Namen daneben, Klausur blau, Zusatzstunde hellblau, neue Änderungen mit Punkt markiert.
+- **Woche oder Tag:** Wochenraster mit Doppelstunden als Block, Jetzt-Linie und Kursnamen; Tagesliste mit Pausen und Freistunden.
+- **Raumfinder** wie bei BetterUntis: Räume wählen und sehen, ob sie jetzt frei sind und bis wann.
+- **Pausen-Info** wie bei BetterUntis: in jeder Pause still die nächste Stunde mit Raum.
 - **Stunden-Details:** Stundeninhalt, Hausaufgaben und Infotext, soweit die Schule sie einträgt.
-- **Kurse ausblenden:** für die Oberstufe pro Plan abwählen, welche Fächer du nicht hast.
-- **Offline:** geladene Wochen bleiben gespeichert und zeigen „Stand: …“, wenn kein Netz da ist.
-- **Meldungen:** einmal pro Stunde prüft die App die nächsten 7 Tage deines Plans und meldet neue Ausfälle, Vertretungen, Raumänderungen und Klausuren.
-- **Widget:** heutige Stunden auf dem Startbildschirm, nach Schulschluss der nächste Schultag.
-- **Verbindungstest:** zeigt Schritt für Schritt, was Untis für dein Konto liefert, zum Kopieren in ein Issue. Ohne Namen, Passwort oder Schlüssel.
+- **Kurse ausblenden:** in den Einstellungen oder per langem Druck auf eine Stunde, mit Rückgängig.
+- **Offline, Meldungen, Widget:** geladene Wochen bleiben gespeichert; einmal pro Stunde meldet die App neue Ausfälle, Vertretungen, Raumänderungen und Klausuren; das Widget zeigt den Tag.
+- **Änderungsverlauf** der letzten 60 Tage und ein **Verbindungstest**, der zeigt, welche Infos deine Schule freigibt (Klausuren, Hausaufgaben, Nachrichten, Sprechstunden, Fehlzeiten), ohne Inhalte auszugeben.
 - **Demo-Schule:** ausprobieren ohne Konto.
 
 ## Was sie nicht kann
@@ -57,7 +58,7 @@
 2. Anmelden, am besten per QR-Code: WebUntis im Browser öffnen → Profil → Freigaben → „Anzeigen“. Den QR-Code mit der Kamera-App scannen, sie öffnet Stundenblick. Das klappt auch mit Zwei-Faktor-Anmeldung und mit IServ-Konten.
 3. Alternativ die Schule suchen und mit Benutzername und Passwort anmelden, oder ohne Anmeldung, falls deine Schule öffentliche Pläne hat.
 
-**Stand 0.9:** Demo, Schulsuche, anonymer Zugang und alle Ansichten sind auf dem Emulator gegen eine echte Schule getestet. Anmeldung mit echtem Konto (QR, Passwort, 2FA) ist noch nicht getestet. Wenn etwas hakt: Einstellungen → Verbindungstest → Kopieren und als [Issue](https://github.com/BrickyStudios/stundenblick/issues) einreichen.
+**Stand 0.10:** Demo, Schulsuche, anonymer Zugang und alle Ansichten sind auf dem Emulator gegen eine echte Schule getestet. Anmeldung mit echtem Konto (QR, Passwort, 2FA) ist noch nicht getestet. Wenn etwas hakt: Einstellungen → Verbindungstest → Kopieren und als [Issue](https://github.com/BrickyStudios/stundenblick/issues) einreichen.
 
 ## Datenschutz
 

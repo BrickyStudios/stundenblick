@@ -31,6 +31,7 @@ class ChangeJob : JobService() {
             val messages = runCatching { repo.checkChanges() }.getOrDefault(emptyList()) // offline: try again next hour, no false alarm
             if (messages.isNotEmpty()) notifyChanges(this, messages)
             DayWidget.update(this)
+            BreakInfo.schedule(this)
             jobFinished(params, false)
         }
         return true
@@ -133,5 +134,77 @@ class DayWidget : AppWidgetProvider() {
             manager.updateAppWidget(ids, views)
         }
 
+    }
+}
+
+/**
+ * J3, like BetterUntis' break notifications: at the end of each lesson that is followed by another one today,
+ * a silent, private notification names the next lesson that takes place. Only the cache is read, nothing is fetched.
+ * One alarm at a time; each firing plans the next break.
+ */
+class BreakInfo : android.content.BroadcastReceiver() {
+    override fun onReceive(ctx: Context, intent: Intent) {
+        val repo = Repo.get(ctx)
+        if (repo.breakInfo) post(ctx, repo, java.time.LocalDateTime.now())
+        schedule(ctx)
+    }
+
+    companion object {
+        private const val CHANNEL = "pause"
+        private const val NOTE = 4711
+
+        private fun ownDay(repo: Repo, day: java.time.LocalDate): List<Period> {
+            val own = repo.own.value ?: return emptyList()
+            val ps = repo.cachedPeriods(own, Parse.monday(day)) ?: return emptyList()
+            return Derive.blocks(Filter.apply(ps, repo.hidden(own)).filter { it.start.toLocalDate() == day })
+        }
+
+        fun schedule(ctx: Context) {
+            val repo = Repo.get(ctx)
+            val am = ctx.getSystemService(android.app.AlarmManager::class.java)
+            val pi = PendingIntent.getBroadcast(ctx, 7, Intent(ctx, BreakInfo::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            am.cancel(pi)
+            if (!repo.breakInfo) return
+            val now = java.time.LocalDateTime.now()
+            val day = ownDay(repo, now.toLocalDate()).filter { !it.cancelled }
+            val end = day.map { it.end }.filter { it.isAfter(now) }.sorted().firstOrNull { e -> day.any { !it.start.isBefore(e) } } ?: return
+            // inexact on purpose: a minute late is fine, and Android 14 restricts exact alarms
+            am.setWindow(android.app.AlarmManager.RTC, end.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(), 60_000, pi)
+        }
+
+        private fun post(ctx: Context, repo: Repo, at: java.time.LocalDateTime) {
+            if (android.os.Build.VERSION.SDK_INT >= 33 && ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+            val master = repo.master.value ?: return
+            val next = Derive.now(ownDay(repo, at.toLocalDate()), at).next
+            val p = next.firstOrNull() ?: return
+            val subject = p.of(Kind.SUBJECT).firstOrNull()?.let { master.find(Kind.SUBJECT, it.id)?.longName?.ifBlank { null } ?: master.find(Kind.SUBJECT, it.id)?.name } ?: p.lessonText.ifBlank { "Stunde" }
+            val room = p.of(Kind.ROOM).joinToString(", ") { master.find(Kind.ROOM, it.id)?.name ?: "?" }
+            val teacher = p.of(Kind.TEACHER).joinToString(", ") { master.find(Kind.TEACHER, it.id)?.name ?: "?" }
+            val label = Derive.unitLabel(p, master) ?: clock.format(p.start)
+            val change = when {
+                p.of(Kind.ROOM).any { it.changed } -> "Raumänderung"
+                p.of(Kind.TEACHER).any { it.changed } -> "Vertretung"
+                p.isExam -> p.exam ?: "Klausur"
+                else -> null
+            }
+            val nm = ctx.getSystemService(NotificationManager::class.java)
+            nm.createNotificationChannel(NotificationChannel(CHANNEL, "Pausen-Info", NotificationManager.IMPORTANCE_LOW))
+            val open = PendingIntent.getActivity(ctx, 2, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+            val public = Notification.Builder(ctx, CHANNEL).setSmallIcon(R.drawable.ic_stat).setContentTitle("Nächste Stunde").build()
+            val until = java.time.Duration.between(at, p.start).toMillis().coerceAtLeast(60_000)
+            val n = Notification.Builder(ctx, CHANNEL)
+                .setSmallIcon(R.drawable.ic_stat)
+                .setContentTitle("Gleich, $label: $subject")
+                .setContentText(listOfNotNull(room.ifBlank { null }?.let { "Raum $it" }, teacher.ifBlank { null }, change).joinToString(", "))
+                .setVisibility(Notification.VISIBILITY_PRIVATE)
+                .setPublicVersion(public)
+                .setContentIntent(open)
+                .setTimeoutAfter(until)
+                .setOnlyAlertOnce(true)
+                .build()
+            nm.notify(NOTE, n)
+        }
+
+        private val clock = DateTimeFormatter.ofPattern("HH:mm")
     }
 }

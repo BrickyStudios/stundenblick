@@ -59,7 +59,13 @@ object Demo {
         .put("subjects", JSONArray(subjects.map { (id, v) -> JSONObject().put("id", id).put("name", v.first).put("longName", v.second).put("backColor", v.third).put("active", true) }))
         .put("rooms", JSONArray(rooms.map { (id, n) -> JSONObject().put("id", id).put("name", n).put("longName", "Raum $n").put("active", true) }))
         .put("timeGrid", JSONObject().put("days", JSONArray((1..5).map { JSONObject().put("units", JSONArray(times.map { (a, b) -> JSONObject().put("startTime", "T$a").put("endTime", "T$b") })) })))
-        .put("holidays", JSONArray())
+        .put("holidays", JSONArray().put(JSONObject().put("name", "Weihn.").put("longName", "Weihnachtsferien")
+            .put("startDate", holidayStart().toString()).put("endDate", holidayStart().plusDays(15).toString())))
+        .put("schoolyears", JSONArray().put(JSONObject().put("name", "Demo-Schuljahr")
+            .put("startDate", LocalDate.now().minusMonths(3).toString()).put("endDate", LocalDate.now().plusMonths(8).toString())))
+
+    /** five weeks ahead, on a Monday, so the countdown always has something to count */
+    private fun holidayStart(): LocalDate = Parse.monday(LocalDate.now()).plusWeeks(5)
 
     fun userData(): JSONObject = JSONObject().put("masterData", master())
         .put("userData", JSONObject().put("elemType", "CLASS").put("elemId", 3).put("displayName", "Q2"))
@@ -91,7 +97,7 @@ object Demo {
                 k == 1L && d == 1L && u == 4L -> states[0] = "CANCELLED"
             }
             periods.put(
-                JSONObject().put("id", day.toEpochDay() * 10_000 + i).put("lessonId", 500 + i)
+                JSONObject().put("id", day.toEpochDay() * 10_000 + i).put("lessonId", k * 10_000 + s * 100 + t)
                     .put("startDateTime", "${day}T$a" + "Z").put("endDateTime", "${day}T$b" + "Z")
                     .put("backColor", subjects.first { it.first == s }.second.third)
                     .put("text", JSONObject().put("lesson", "").put("substitution", subst).put("info", if (exam != null) "Hilfsmittel: Taschenrechner" else ""))

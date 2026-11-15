@@ -95,13 +95,13 @@ object Changes {
      * Messages for periods that are special now and were not, or not like this, before.
      * old == null means first run: fill the cache, notify nothing.
      */
-    fun between(old: List<Period>?, new: List<Period>, master: Master, hidden: Set<Long>): List<String> {
+    fun between(old: List<Period>?, new: List<Period>, master: Master, hidden: Set<Long>): List<Pair<Long, String>> {
         if (old == null) return emptyList()
         val before = old.associateBy { it.id }
         return Filter.apply(new, hidden).filter { p ->
             val o = before[p.id]
             if (o == null) p.special else signature(o) != signature(p) && (p.special || o.special)
-        }.map { describe(it, master) }
+        }.map { it.id to describe(it, master) }
     }
 
     fun when_(p: Period, master: Master): String {

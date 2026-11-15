@@ -1,22 +1,28 @@
 # TODOS
 
-Aus dem CEO-Review vom 15.11.2026 (Plan: `~/.gstack/projects/BrickyStudios-stundenblick/plans/2026-11-15-v1-plan.md`).
+Verbindliche Spezifikation: `~/.gstack/projects/BrickyStudios-stundenblick/plans/2026-11-15-v1.1-spec.md` (aus dem CEO-Review vom 15.11.2026).
 
 ## Vor v1.0
 
-- **Test mit echtem Konto.** QR-Code scannen, eigene Woche, Stunden-Details, Verbindungstest kopieren. Erst danach v1.0 taggen.
+- **Test mit echtem Konto:** QR-Code scannen, eigene Woche, Stunden-Details, Verbindungstest kopieren.
+- **K13-Tor:** Lädt der eigene Plan mit Konto nicht (BetterUntis #503), kommt der REST-Fallback vor allem anderen.
+- **Signierschlüssel sichern:** `~/.config/stundenblick/` auf den USB-Stick. Ohne Schlüssel keine Updates.
+
+## Welle B (nach den Verbindungstest-Daten echter Konten)
+
+- **Info Center** wie bei BetterUntis: Klausuren, Hausaufgaben (lokal abhakbar), Nachricht des Tages (bei Öffnen nach 2 h neu), Sprechstunden mit Mail/Telefon, eigene Fehlzeiten. Je Endpunkt einmal pro Tag, „kein Recht“ blendet aus.
+- **Heute-Karten** für nächste Klausur, Hausaufgaben bis morgen, Nachricht des Tages; neue Klausuren im Verlauf; nächste Klausur im Widget.
+- **Widget** auf `nextSchoolDay` umstellen, Ferien-Text.
+
+## Danach
+
+- **IzzyOnDroid-Antrag** (fastlane-Metadaten). Updater ist schon abschaltbar.
+- **Testwoche** mit etwa 5 Leuten aus der Stufe: welche Heute-Karte sehen sie wirklich an?
+- **Website** um Heute-Seite, Raumfinder und Pausen-Info ergänzen (Screens aus der Demo).
 
 ## Später
 
-- **K13 REST-Fallback für den eigenen Plan.** Untis liefert bei manchen Konten den eigenen Plan nur noch über `/WebUntis/api/rest/view/v1/timetable/entries` (BetterUntis #503). Entscheidung nach den Verbindungstest-Daten echter Konten. Aufwand M.
-- **K10 Freie Räume.** Nur auf Knopfdruck, höchstens ein Abruf pro Raum und Woche, Cache bis Wochenende, Fortschritt mit Abbrechen, nur Räume, deren Plan das Konto sehen darf. Bei 100–600 Räumen sonst zu viele Anfragen. Aufwand M.
-- **K9 Infos-Listen.** Nachrichten des Tages, Klausuren, Hausaufgaben als eigene Listen. Aufwand S.
-- **K12 Mehrere Profile.** Eltern mit zwei Kindern, zwei Schulen. Aufwand M.
-- **K19 Gemeinsame Freistunden.** Zwei Pläne übereinander legen. Braucht K12. Aufwand M.
-- **K18 Kalender-Export (ICS).** Aufwand S.
-- **IzzyOnDroid-Antrag** (fastlane-Metadaten anlegen). Updater ist schon abschaltbar.
-- **Signierschlüssel sichern:** `~/.config/stundenblick/` auf den USB-Stick, wie bei Monatskasse. Ohne Schlüssel keine Updates.
-- **Wochenraster bei vielen parallelen Gruppen:** ab 4 Gruppen pro Stunde werden die Zellen sehr schmal. Idee: ab 3 Spuren nur Fach zeigen und Raum/Lehrkraft in die Tagesansicht verlagern.
+Stummschalten im Unterricht, mehrere Profile, Tag teilen (mit Vertrieb neu bewerten), REST-Posteingang, ICS-Export, gemeinsame Freistunden.
 
 ## Gestrichen
 

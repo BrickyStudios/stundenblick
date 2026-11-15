@@ -32,6 +32,9 @@ class Repo private constructor(ctx: Context) {
     var notify: Boolean
         get() = prefs.getBoolean("notify", false)
         set(v) = prefs.edit().putBoolean("notify", v).apply()
+    var breakInfo: Boolean
+        get() = prefs.getBoolean("breakInfo", false)
+        set(v) = prefs.edit().putBoolean("breakInfo", v).apply()
     var updates: Boolean
         get() = prefs.getBoolean("updates", true)
         set(v) = prefs.edit().putBoolean("updates", v).apply()
@@ -52,6 +55,9 @@ class Repo private constructor(ctx: Context) {
     fun setOwn(e: Element?) {
         prefs.edit().putString("own", e?.key).putString("ownName", e?.longName).apply()
         own.value = e?.copy(name = "Mein Plan")
+        // another plan: the old plan's history and day caches no longer apply
+        listOf("history.json", "exams.json", "homework.json", "absences.json", "done.json").forEach { File(dir, it).delete() }
+        history.value = emptyList()
     }
 
     // ---- names for favorites: "CLASS:3|Q2"
@@ -120,6 +126,8 @@ class Repo private constructor(ctx: Context) {
         own.value = null
         weeks.clear()
         favorites.value = emptySet()
+        history.value = emptyList()
+        rooms.value = emptySet()
     }
 
     private fun weekFile(e: Element, monday: LocalDate) = "weeks/${e.kind.name}-${e.id}-$monday.json"
@@ -129,7 +137,7 @@ class Repo private constructor(ctx: Context) {
         readJson(weekFile(e, monday))?.optJSONObject("data")?.let { runCatching { Parse.periods(it) }.getOrNull() }
 
     /** Shows the cache at once, then asks Untis unless the cache is younger than 5 minutes (or force). */
-    suspend fun load(e: Element, monday: LocalDate, force: Boolean = false) {
+    suspend fun load(e: Element, monday: LocalDate, force: Boolean = false, maxAgeMs: Long = 5 * 60_000L) {
         val key = weekKey(e, monday)
         val p = profile.value ?: return
         val cached = weeks[key] ?: withContext(Dispatchers.IO) {
@@ -137,7 +145,7 @@ class Repo private constructor(ctx: Context) {
             Week(f?.optJSONObject("data")?.let { runCatching { Parse.periods(it) }.getOrNull() }, f?.optLong("savedAt") ?: 0, false, null)
         }
         if (cached.loading) return
-        if (!force && cached.periods != null && System.currentTimeMillis() - cached.fetchedAt < 5 * 60_000L) {
+        if (!force && cached.periods != null && System.currentTimeMillis() - cached.fetchedAt < maxAgeMs) {
             weeks[key] = cached
             return
         }
@@ -147,31 +155,89 @@ class Repo private constructor(ctx: Context) {
                 val r = timetable(p, e.kind, e.id, monday)
                 val now = System.currentTimeMillis()
                 writeJson(weekFile(e, monday), JSONObject().put("savedAt", now).put("data", r))
-                Week(Parse.periods(r), now, false, null)
+                val fresh = Parse.periods(r)
+                if (own.value?.key == e.key) record(cached.periods, fresh, e)
+                Week(fresh, now, false, null)
             }.getOrElse { Week(cached.periods, cached.fetchedAt, false, Errors.explain(it)) }
         }
-        if (own.value?.key == e.key) DayWidget.update(app)
+        if (own.value?.key == e.key) {
+            DayWidget.update(app)
+            BreakInfo.schedule(app)
+        }
     }
 
-    /** K4: topic, homework and extra text for one period */
+    /** K4: topic, homework and extra text; a double-lesson block asks for all its periods and merges them */
     suspend fun extra(period: Period): Result<Parse.Extra?> = withContext(Dispatchers.IO) {
         val p = profile.value ?: return@withContext Result.success(null)
-        runCatching { Parse.extra(periodData(p, listOf(period.id)), period.id) }
+        runCatching {
+            val r = periodData(p, period.ids)
+            val parts = period.ids.mapNotNull { Parse.extra(r, it) }
+            if (parts.isEmpty()) null else Parse.Extra(
+                parts.map { it.topic }.filter(String::isNotBlank).distinct().joinToString("\n"),
+                parts.flatMap { it.homework }.distinct(),
+                parts.map { it.info }.filter(String::isNotBlank).distinct().joinToString("\n"),
+            )
+        }
     }
+
+    // ---- RoomFinder (J2): rooms the user picked, each week loaded at most once
+    val rooms = mutableStateOf(prefs.getStringSet("rooms", emptySet())!!.mapNotNull { it.toLongOrNull() }.toSet())
+    fun setRooms(ids: Set<Long>) {
+        prefs.edit().putStringSet("rooms", ids.map { it.toString() }.toSet()).apply()
+        rooms.value = ids
+    }
+
+    // ---- change history (E11): one writer for the job thread and the UI, so no entry is lost or doubled
+    data class Entry(val id: Long, val text: String, val at: Long, val seen: Boolean)
+
+    val history = mutableStateOf(readHistory())
+    private val historyLock = Any()
+
+    private fun readHistory(): List<Entry> = readJson("history.json")?.optJSONArray("entries").objects().map {
+        Entry(it.optLong("id"), it.optString("text"), it.optLong("at"), it.optBoolean("seen"))
+    }
+
+    private fun writeHistory(list: List<Entry>) {
+        val cutoff = System.currentTimeMillis() - 60L * 24 * 3600_000
+        val kept = list.filter { it.at >= cutoff }.takeLast(200)
+        writeJson("history.json", JSONObject().put("entries", org.json.JSONArray(kept.map {
+            JSONObject().put("id", it.id).put("text", it.text).put("at", it.at).put("seen", it.seen)
+        })))
+        history.value = kept
+    }
+
+    /** Compares the own plan from today on (two weeks) and keeps each new change once; returns the new texts. */
+    private fun record(old: List<Period>?, fresh: List<Period>, e: Element): List<String> {
+        val m = master.value ?: return emptyList()
+        val today = LocalDate.now()
+        fun window(ps: List<Period>) = ps.filter { !it.start.toLocalDate().isBefore(today) && it.start.toLocalDate().isBefore(today.plusDays(14)) }
+        val found = Changes.between(old?.let(::window), window(fresh), m, hidden(e))
+        if (found.isEmpty()) return emptyList()
+        synchronized(historyLock) {
+            val have = history.value.map { it.id to it.text }.toSet()
+            val add = found.filter { it !in have }.map { (id, text) -> Entry(id, text, System.currentTimeMillis(), false) }
+            if (add.isNotEmpty()) writeHistory(history.value + add)
+            return add.map { it.text }
+        }
+    }
+
+    fun markSeen(ids: Collection<Long>) = synchronized(historyLock) {
+        if (history.value.any { !it.seen && it.id in ids }) writeHistory(history.value.map { if (it.id in ids) it.copy(seen = true) else it })
+    }
+
+    fun unseen(): Set<Long> = history.value.filter { !it.seen }.map { it.id }.toSet()
 
     /** K7: fetch this and next week of the own plan, return messages for what changed since the last look. */
     fun checkChanges(): List<String> {
         val p = profile.value ?: return emptyList()
         val e = own.value ?: return emptyList()
-        val m = master.value ?: return emptyList()
+        master.value ?: return emptyList()
         val monday = Parse.monday(LocalDate.now())
-        val today = LocalDate.now()
         return listOf(monday, monday.plusWeeks(1)).flatMap { mon ->
             val old = cachedPeriods(e, mon)
             val r = timetable(p, e.kind, e.id, mon)
             writeJson(weekFile(e, mon), JSONObject().put("savedAt", System.currentTimeMillis()).put("data", r))
-            val fresh = Parse.periods(r).filter { !it.start.toLocalDate().isBefore(today) && it.start.toLocalDate().isBefore(today.plusDays(7)) }
-            Changes.between(old?.filter { !it.start.toLocalDate().isBefore(today) }, fresh, m, hidden(e))
+            record(old, Parse.periods(r), e)
         }
     }
 
@@ -195,7 +261,7 @@ class Repo private constructor(ctx: Context) {
         val year = ud.getOrNull()?.optJSONObject("masterData")?.let { Parse.schoolYear(it, today) }
         val klasse = ud.getOrNull()?.optJSONObject("userData")?.optJSONArray("klassenIds")?.let { if (it.length() > 0) it.optLong(0) else null }
             ?: e?.takeIf { it.kind == Kind.CLASS }?.id
-        // F6: count and field names per endpoint, never a value, so Jonas' test shows what his school hands out
+        // F6: count and field names per endpoint, never a value, so a test with a real account shows what the school hands out
         fun probe(label: String, skip: String? = null, block: () -> JSONObject) {
             if (skip != null) { steps += Diag.Step(label, false, skip); return }
             runCatching(block).fold(

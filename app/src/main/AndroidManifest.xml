@@ -41,6 +41,10 @@
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <receiver
+            android:name=".BreakInfo"
+            android:exported="false" />
+
+        <receiver
             android:name=".DayWidget"
             android:exported="false"
             android:label="Stundenblick heute">

@@ -56,7 +56,7 @@ const val REPO_URL = "https://github.com/BrickyStudios/stundenblick"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(repo: Repo, current: Element, onBack: () -> Unit, onSetOwn: () -> Unit, onLoggedOut: () -> Unit) {
+fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: () -> Unit, onLoggedOut: () -> Unit) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val p = repo.profile.value
@@ -103,7 +103,7 @@ fun SettingsScreen(repo: Repo, current: Element, onBack: () -> Unit, onSetOwn: (
                 TextButton(onClick = onSetOwn) { Text("Klasse als eigenen Plan setzen") }
             }
 
-            Section("Kurse ausblenden · ${current.name}") {
+            if (current != null) Section("Kurse ausblenden: ${current.name}") {
                 // subjects that actually occur in the loaded weeks of this plan, so the list stays short
                 val monday = Parse.monday(LocalDate.now())
                 val ids = listOf(monday, monday.plusWeeks(1)).flatMap { (repo.weeks[repo.weekKey(current, it)]?.periods ?: repo.cachedPeriods(current, it)).orEmpty() }
@@ -133,6 +133,18 @@ fun SettingsScreen(repo: Repo, current: Element, onBack: () -> Unit, onSetOwn: (
                     }, enabled = repo.own.value != null)
                 }
                 Text("Prüft einmal pro Stunde die nächsten 7 Tage, nur mit Netz.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+            }
+
+            Section("Pausen-Info") {
+                var breaks by remember { mutableStateOf(repo.breakInfo) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("In jeder Pause still die nächste Stunde mit Raum anzeigen", Modifier.weight(1f), fontSize = 15.sp)
+                    Switch(breaks, { on ->
+                        if (on && Build.VERSION.SDK_INT >= 33) ask.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        breaks = on; repo.breakInfo = on; BreakInfo.schedule(ctx)
+                    }, enabled = repo.own.value != null)
+                }
+                Text("Nur aus dem Speicher, ohne Abruf. Die Meldung verschwindet zu Stundenbeginn.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
             }
 
             Section("Updates") {

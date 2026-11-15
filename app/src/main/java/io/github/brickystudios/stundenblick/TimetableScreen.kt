@@ -2,7 +2,9 @@ package io.github.brickystudios.stundenblick
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -42,6 +44,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -63,6 +69,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -99,9 +106,9 @@ private fun Master?.name(r: Ref, long: Boolean = false, original: Boolean = fals
 private fun Master?.subject(p: Period, long: Boolean = false) =
     p.of(Kind.SUBJECT).firstOrNull()?.let { name(it, long) } ?: p.lessonText.ifBlank { p.substText.ifBlank { "Stunde" } }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings: () -> Unit) {
+fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings: () -> Unit, onOpen: (Element) -> Unit) {
     val master = repo.master.value
     val today = remember { LocalDate.now() }
     val base = remember { startMonday(today) }
@@ -113,6 +120,18 @@ fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings
     var detail by remember { mutableStateOf<Period?>(null) }
     val hidden = remember(repo.hiddenVersion.value, element.key) { repo.hidden(element) }
     val now by produceState(LocalDateTime.now()) { while (true) { delay(30_000); value = LocalDateTime.now() } }
+    val snackbar = remember { SnackbarHostState() }
+    val isOwn = element.key == repo.own.value?.key
+    // D3: long press hides the subject in this plan, with a way back
+    val hide: (Period) -> Unit = hide@{ p ->
+        val sid = p.subjectId ?: return@hide
+        repo.setHidden(element, repo.hidden(element) + sid)
+        scope.launch {
+            val name = repo.master.value?.find(Kind.SUBJECT, sid)?.name ?: "Fach"
+            if (snackbar.showSnackbar("$name ausgeblendet", "Rückgängig", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed)
+                repo.setHidden(element, repo.hidden(element) - sid)
+        }
+    }
 
     fun mondayOf(weekPage: Int): LocalDate = base.plusWeeks((weekPage - CENTER).toLong())
     fun dayOf(page: Int): LocalDate = base.plusWeeks((page / 5 - CENTER).toLong()).plusDays((page % 5).toLong())
@@ -135,7 +154,7 @@ fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings
                 actions = {
                     TextButton(onClick = {
                         scope.launch { if (weekView) weekPager.animateScrollToPage(CENTER) else dayPager.animateScrollToPage(CENTER * 5 + firstDay) }
-                    }) { Text("Heute") }
+                    }) { Text("Jetzt") }
                     IconButton(onClick = { weekView = !weekView; repo.weekView = weekView }) {
                         Icon(if (weekView) Icons.Default.List else Icons.Default.DateRange, if (weekView) "Tagesansicht" else "Wochenansicht")
                     }
@@ -146,9 +165,15 @@ fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbar) },
     ) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
             StatusLine(week)
+            if (!isOwn && element.kind != Kind.SUBJECT) NowLine(repo, element, master, now)
+            week?.periods?.let { ps ->
+                val c = Derive.weekCount(Derive.blocks(Filter.apply(ps, hidden)))
+                if (c.any) Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) { WeekLine(c) }
+            }
             PullToRefreshBox(
                 isRefreshing = week?.loading == true && week.periods != null,
                 onRefresh = { scope.launch { repo.load(element, shownMonday, force = true) } },
@@ -159,7 +184,10 @@ fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings
                         val monday = mondayOf(page)
                         LaunchedEffect(element.key, monday) { repo.load(element, monday) }
                         val w = repo.weeks[repo.weekKey(element, monday)]
-                        WeekPage(w, master, monday, today, now, hidden) { detail = it }
+                        // E11: the dot stays for this visit; the week counts as seen once it is the current page
+                        val fresh = remember(element.key, monday) { if (isOwn) repo.unseen() else emptySet() }
+                        if (isOwn && weekPager.currentPage == page) LaunchedEffect(w?.periods) { w?.periods?.let { ps -> repo.markSeen(ps.map { it.id }) } }
+                        WeekPage(w, master, monday, today, now, hidden, fresh, hide) { detail = it }
                     }
                 } else {
                     HorizontalPager(dayPager, beyondViewportPageCount = 1) { page ->
@@ -167,13 +195,17 @@ fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings
                         val monday = Parse.monday(day)
                         LaunchedEffect(element.key, monday) { repo.load(element, monday) }
                         val w = repo.weeks[repo.weekKey(element, monday)]
-                        DayPage(w, master, day, element, hidden) { detail = it }
+                        val fresh = remember(element.key, monday) { if (isOwn) repo.unseen() else emptySet() }
+                        if (isOwn && dayPager.currentPage == page) LaunchedEffect(w?.periods, day) {
+                            w?.periods?.let { ps -> repo.markSeen(ps.filter { it.start.toLocalDate() == day }.map { it.id }) }
+                        }
+                        DayPage(w, master, day, element, hidden, fresh, hide) { detail = it }
                     }
                 }
             }
         }
     }
-    detail?.let { DetailSheet(repo, it, master) { detail = null } }
+    detail?.let { DetailSheet(repo, it, master, onOpen = { e -> detail = null; onOpen(e) }) { detail = null } }
 }
 
 @Composable
@@ -196,10 +228,10 @@ private fun Centered(text: String, loading: Boolean = false) {
 }
 
 @Composable
-private fun WeekPage(week: Week?, master: Master?, monday: LocalDate, today: LocalDate, now: LocalDateTime, hidden: Set<Long>, onTap: (Period) -> Unit) {
+private fun WeekPage(week: Week?, master: Master?, monday: LocalDate, today: LocalDate, now: LocalDateTime, hidden: Set<Long>, fresh: Set<Long>, onHide: (Period) -> Unit, onTap: (Period) -> Unit) {
     val all = week?.periods
     if (all == null) return Centered(week?.error ?: "", loading = week?.error == null)
-    val periods = Filter.apply(all, hidden)
+    val periods = Derive.blocks(Filter.apply(all, hidden))
     val units = master?.units.orEmpty()
     val s = LocalSignals.current
     val showSat = periods.any { it.start.dayOfWeek == DayOfWeek.SATURDAY }
@@ -257,7 +289,7 @@ private fun WeekPage(week: Week?, master: Master?, monday: LocalDate, today: Loc
                                 Modifier.offset(x = laneW * pl.lane, y = y(p.start.toLocalTime()))
                                     .width(laneW).height(minuteHeight * ((p.end.toLocalTime().toSecondOfDay() - p.start.toLocalTime().toSecondOfDay()) / 60))
                                     .padding(1.5.dp),
-                            ) { Cell(p, master, onTap) }
+                            ) { Cell(p, master, pl.lanes == 1, p.ids.any { it in fresh }, onHide, onTap) }
                         }
                         if (d == today && now.toLocalTime() > first && now.toLocalTime() < last) {
                             Box(Modifier.offset(y = y(now.toLocalTime()) - 1.dp).fillMaxWidth().height(2.dp).background(s.now))
@@ -282,8 +314,9 @@ private fun accentOf(p: Period): Color? {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun Cell(p: Period, master: Master?, onTap: (Period) -> Unit) {
+private fun Cell(p: Period, master: Master?, wide: Boolean, isNew: Boolean, onHide: (Period) -> Unit, onTap: (Period) -> Unit) {
     val s = LocalSignals.current
     val accent = accentOf(p)
     val stripe = untisColor(p.color) ?: MaterialTheme.colorScheme.outline
@@ -296,11 +329,11 @@ private fun Cell(p: Period, master: Master?, onTap: (Period) -> Unit) {
         Modifier.fillMaxSize().clip(shape)
             .background(if (p.cancelled) s.cancelled.copy(alpha = 0.07f) else MaterialTheme.colorScheme.surface)
             .border(if (accent != null) 1.5.dp else 0.5.dp, accent ?: MaterialTheme.colorScheme.outlineVariant, shape)
-            .clickable { onTap(p) }
-            .semantics { contentDescription = "$subject ${hm.format(p.start)}, Raum $room, $teacher. $tags" },
+            .combinedClickable(onClick = { onTap(p) }, onLongClick = { onHide(p) }, onLongClickLabel = "Fach ausblenden")
+            .semantics { contentDescription = "$subject ${hm.format(p.start)}, Raum $room, $teacher. $tags" + if (isNew) ", neu" else "" },
     ) {
         Box(Modifier.width(3.dp).fillMaxHeight().background(if (p.cancelled) s.cancelled.copy(alpha = 0.4f) else stripe))
-        Column(Modifier.padding(horizontal = 3.dp, vertical = 2.dp)) {
+        Column(Modifier.weight(1f).padding(horizontal = 3.dp, vertical = 2.dp)) {
             Text(subject, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Clip,
                 textDecoration = if (p.cancelled) TextDecoration.LineThrough else null,
                 color = if (p.cancelled) s.muted else MaterialTheme.colorScheme.onSurface)
@@ -310,34 +343,47 @@ private fun Cell(p: Period, master: Master?, onTap: (Period) -> Unit) {
             if (teacher.isNotBlank()) Text(teacher, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Clip,
                 color = if (p.of(Kind.TEACHER).any { it.changed }) s.changed else s.muted,
                 fontWeight = if (p.of(Kind.TEACHER).any { it.changed }) FontWeight.Bold else null)
+            // E5: the course or group name fits in a single-lane block of 56 minutes or more
+            val course = p.lessonText.takeIf { it.isNotBlank() && it != subject }
+            if (wide && course != null && p.end.toLocalTime().toSecondOfDay() - p.start.toLocalTime().toSecondOfDay() >= 56 * 60)
+                Text(course, fontSize = 9.sp, lineHeight = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = s.muted)
+        }
+        if (isNew) Box(Modifier.padding(3.dp).size(7.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+    }
+}
+
+@Composable
+private fun DayPage(week: Week?, master: Master?, day: LocalDate, element: Element, hidden: Set<Long>, fresh: Set<Long>, onHide: (Period) -> Unit, onTap: (Period) -> Unit) {
+    val all = week?.periods
+    if (all == null) return Centered(week?.error ?: "", loading = week?.error == null)
+    val periods = Derive.blocks(Filter.apply(all, hidden).filter { it.start.toLocalDate() == day })
+    if (periods.isEmpty()) return Centered(master?.holiday(day)?.let { "Ferien: $it" } ?: "Keine Stunden an diesem Tag.")
+    val rows = if (master != null) Derive.dayRows(periods, master) else periods.map { Derive.Row.Lesson(it) }
+    LazyColumn(contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(rows, key = { r -> if (r is Derive.Row.Lesson) r.period.id else (r as Derive.Row.Gap).let { "gap${it.start}-${it.end}" } }) { r ->
+            when (r) {
+                is Derive.Row.Lesson -> PeriodRow(r.period, master, element, r.period.ids.any { it in fresh }, onHide, onTap)
+                is Derive.Row.Gap -> Text("${r.label}, ${hm.format(r.start)}–${hm.format(r.end)}", Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    fontSize = 13.sp, color = LocalSignals.current.muted, textAlign = TextAlign.Center)
+            }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
-private fun DayPage(week: Week?, master: Master?, day: LocalDate, element: Element, hidden: Set<Long>, onTap: (Period) -> Unit) {
-    val all = week?.periods
-    if (all == null) return Centered(week?.error ?: "", loading = week?.error == null)
-    val periods = Filter.apply(all, hidden).filter { it.start.toLocalDate() == day }
-    if (periods.isEmpty()) return Centered(master?.holiday(day)?.let { "Ferien: $it" } ?: "Keine Stunden an diesem Tag.")
-    LazyColumn(contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(periods, key = { it.id }) { p -> PeriodRow(p, master, element, onTap) }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun PeriodRow(p: Period, master: Master?, element: Element, onTap: (Period) -> Unit) {
+private fun PeriodRow(p: Period, master: Master?, element: Element, isNew: Boolean, onHide: (Period) -> Unit, onTap: (Period) -> Unit) {
     val s = LocalSignals.current
     val accent = accentOf(p)
     val shape = RoundedCornerShape(12.dp)
     Row(
         Modifier.fillMaxWidth().clip(shape).background(MaterialTheme.colorScheme.surface)
             .border(if (accent != null) 1.5.dp else 0.5.dp, accent ?: MaterialTheme.colorScheme.outlineVariant, shape)
-            .clickable { onTap(p) }.padding(12.dp),
+            .combinedClickable(onClick = { onTap(p) }, onLongClick = { onHide(p) }, onLongClickLabel = "Fach ausblenden").padding(12.dp),
     ) {
-        Column(Modifier.width(58.dp)) {
-            master?.unitNumber(p.start.toLocalTime())?.let { Text("$it. Std.", fontWeight = FontWeight.SemiBold, fontSize = 13.sp) }
+        Column(Modifier.width(64.dp)) {
+            master?.let { Derive.unitLabel(p, it) }?.let { Text(it, fontWeight = FontWeight.SemiBold, fontSize = 13.sp) }
+            if (isNew) Text("neu", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
             Text(hm.format(p.start), fontSize = 12.sp, color = s.muted)
             Text(hm.format(p.end), fontSize = 12.sp, color = s.muted)
         }
@@ -362,7 +408,7 @@ private fun PeriodRow(p: Period, master: Master?, element: Element, onTap: (Peri
 
 /** "Anna Albers (ALB)", or for a substitution the new name plus the struck original */
 @Composable
-private fun RefLine(p: Period, kind: Kind, master: Master?) {
+private fun RefLine(p: Period, kind: Kind, master: Master?, onOpen: ((Element) -> Unit)? = null) {
     val refs = p.of(kind)
     if (refs.isEmpty()) return
     val s = LocalSignals.current
@@ -370,8 +416,12 @@ private fun RefLine(p: Period, kind: Kind, master: Master?) {
         Text(kind.label + ": ", fontSize = 13.sp, color = s.muted)
         refs.forEachIndexed { i, r ->
             if (i > 0) Text(", ", fontSize = 13.sp)
+            val target = master?.find(kind, r.id)?.takeIf { r.id != 0L && onOpen != null }
             Text(master.name(r, long = kind == Kind.TEACHER), fontSize = 13.sp,
-                color = if (r.changed) s.changed else MaterialTheme.colorScheme.onSurface, fontWeight = if (r.changed) FontWeight.SemiBold else null)
+                color = if (r.changed) s.changed else MaterialTheme.colorScheme.onSurface,
+                fontWeight = if (r.changed) FontWeight.SemiBold else null,
+                textDecoration = if (target != null) TextDecoration.Underline else null,
+                modifier = if (target != null) Modifier.clickable(onClickLabel = "Plan öffnen") { onOpen!!(target) } else Modifier)
             if (r.changed) Text(" " + master.name(r, original = true), fontSize = 13.sp, color = s.muted, textDecoration = TextDecoration.LineThrough)
         }
     }
@@ -379,21 +429,21 @@ private fun RefLine(p: Period, kind: Kind, master: Master?) {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun DetailSheet(repo: Repo, p: Period, master: Master?, onDismiss: () -> Unit) {
+private fun DetailSheet(repo: Repo, p: Period, master: Master?, onOpen: (Element) -> Unit, onDismiss: () -> Unit) {
     val s = LocalSignals.current
     val extra by produceState<Result<Parse.Extra?>?>(null, p.id) { value = repo.extra(p) }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(master.subject(p, long = true), fontSize = 22.sp, fontWeight = FontWeight.SemiBold,
                 textDecoration = if (p.cancelled) TextDecoration.LineThrough else null)
-            val n = master?.unitNumber(p.start.toLocalTime())?.let { "$it. Stunde · " }.orEmpty()
+            val n = master?.let { Derive.unitLabel(p, it) }?.let { "$it, " }.orEmpty()
             Text(n + dayLong.format(p.start) + " · " + hm.format(p.start) + "–" + hm.format(p.end), color = s.muted, fontSize = 14.sp)
             val tags = tagsFor(p)
             if (tags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) { tags.forEach { (t, c) -> Tag(t, c) } }
             HorizontalDivider(color = s.line)
-            RefLine(p, Kind.TEACHER, master)
-            RefLine(p, Kind.ROOM, master)
-            RefLine(p, Kind.CLASS, master)
+            RefLine(p, Kind.TEACHER, master, onOpen)
+            RefLine(p, Kind.ROOM, master, onOpen)
+            RefLine(p, Kind.CLASS, master, onOpen)
             listOf(p.substText, p.info, p.lessonText).filter { t -> t.isNotBlank() && tags.none { it.first.equals(t, true) } }.distinct().forEach { Text(it, fontSize = 15.sp) }
             HorizontalDivider(color = s.line)
             when (val r = extra) {
@@ -425,4 +475,24 @@ private fun Labeled(label: String, text: String) {
         Text(label, fontSize = 12.sp, color = LocalSignals.current.muted, fontWeight = FontWeight.Medium)
         Text(text, fontSize = 15.sp)
     }
+}
+
+/** E12: over a teacher's, room's or class's plan, where they are now (from their current week). */
+@Composable
+private fun NowLine(repo: Repo, element: Element, master: Master?, now: LocalDateTime) {
+    val ps = repo.weeks[repo.weekKey(element, Parse.monday(now.toLocalDate()))]?.periods ?: return
+    val st = Derive.now(Derive.blocks(ps), now)
+    fun where(p: Period) = when (element.kind) {
+        Kind.TEACHER -> p.of(Kind.ROOM).joinToString(", ") { "Raum " + master.name(it) } + " (" + master.subject(p) + ")"
+        Kind.ROOM -> (p.of(Kind.CLASS).joinToString(", ") { master.name(it) } + " " + master.subject(p) + " " + p.of(Kind.TEACHER).joinToString(", ") { master.name(it) }).trim()
+        else -> master.subject(p) + ", " + p.of(Kind.ROOM).joinToString(", ") { "Raum " + master.name(it) }
+    }
+    val current = st.current.firstOrNull { !it.cancelled }
+    val text = when {
+        current != null -> "Jetzt: " + where(current) + ", bis " + hm.format(current.end)
+        st.next.isNotEmpty() -> "Jetzt frei, um " + hm.format(st.next.first().start) + ": " + where(st.next.first())
+        else -> return
+    }
+    Text(text, Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 16.dp, vertical = 8.dp),
+        fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Medium)
 }
