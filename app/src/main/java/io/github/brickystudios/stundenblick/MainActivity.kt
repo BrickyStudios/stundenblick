@@ -1,0 +1,290 @@
+package io.github.brickystudios.stundenblick
+
+import android.content.Intent
+import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+class MainActivity : ComponentActivity() {
+    /** a setschool link waiting for the user's yes; never applied without it */
+    private val link = mutableStateOf<SetSchool?>(null)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) take(intent)
+        val repo = Repo.get(this)
+        setContent { StundenblickTheme { Surface(color = MaterialTheme.colorScheme.background) { App(repo, link) } } }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        take(intent)
+    }
+
+    private fun take(intent: Intent?) {
+        val data = intent?.data?.toString() ?: return
+        val parsed = Parse.setSchool(data)
+        if (parsed == null) Toast.makeText(this, "Das ist kein gültiger Untis-Link.", Toast.LENGTH_LONG).show()
+        link.value = parsed
+    }
+}
+
+private enum class Screen { TIMETABLE, PICK, PICK_OWN, SETTINGS }
+
+@Composable
+private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchool?>) {
+    val ctx = LocalContext.current
+    var screen by rememberSaveable { mutableStateOf(Screen.TIMETABLE) }
+    var shownKey by rememberSaveable { mutableStateOf(repo.last?.key) }
+    val profile = repo.profile.value
+    val own = repo.own.value
+    val update by Updater.state.collectAsState()
+
+    LaunchedEffect(profile) {
+        if (profile != null) {
+            ChangeJob.schedule(ctx, repo.notify) // heals a switch that is on without its job (e.g. after an update)
+            repo.refreshMaster()
+            if (repo.updates) Updater.check(ctx, manual = false)
+        }
+    }
+
+    link.value?.let { l ->
+        return LinkConfirm(repo, l, onDone = { link.value = null; screen = Screen.TIMETABLE; shownKey = null })
+    }
+    if (profile == null) return LoginScreen(repo) { screen = Screen.TIMETABLE; shownKey = null }
+
+    // shown plan: last choice, else the own plan; resolve names from master data
+    val shown: Element? = shownKey?.let { key ->
+        if (key == own?.key) own else Element.fromKey(key, "")?.let { e -> repo.master.value?.find(e.kind, e.id) ?: repo.last?.takeIf { it.key == key } }
+    } ?: own
+
+    fun show(e: Element) {
+        shownKey = e.key
+        repo.last = e
+        screen = Screen.TIMETABLE
+    }
+
+    BackHandler(enabled = screen != Screen.TIMETABLE) { screen = Screen.TIMETABLE }
+    when {
+        screen == Screen.PICK -> PickerScreen(repo, ownMode = false, onBack = { screen = Screen.TIMETABLE }) { show(it) }
+        screen == Screen.PICK_OWN -> PickerScreen(repo, ownMode = true, onBack = { screen = Screen.TIMETABLE }) { repo.setOwn(it); show(repo.own.value!!) }
+        screen == Screen.SETTINGS && shown != null -> SettingsScreen(repo, shown, onBack = { screen = Screen.TIMETABLE }, onSetOwn = { screen = Screen.PICK_OWN },
+            onLoggedOut = { screen = Screen.TIMETABLE; shownKey = null })
+        shown == null -> OwnMissing(profile, onSetOwn = { screen = Screen.PICK_OWN }, onPick = { screen = Screen.PICK }, onSettings = { screen = Screen.SETTINGS })
+        else -> TimetableScreen(repo, shown, onPick = { screen = Screen.PICK }, onSettings = { screen = Screen.SETTINGS })
+    }
+
+    update?.let { u ->
+        val scope = rememberCoroutineScope()
+        AlertDialog(
+            onDismissRequest = { Updater.later() },
+            title = { Text("Stundenblick ${u.release.version} ist da") },
+            text = {
+                Column {
+                    Text("Die neue Version wird von GitHub geladen und von Android installiert.")
+                    u.progress?.let { Spacer(Modifier.height(12.dp)); LinearProgressIndicator({ it }, Modifier.fillMaxWidth()) }
+                    if (u.failed) Text("Download fehlgeschlagen. Versuch es noch einmal.", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            confirmButton = { Button(onClick = { scope.launch { Updater.install(ctx) } }, enabled = u.progress == null) { Text("Installieren") } },
+            dismissButton = { TextButton(onClick = { Updater.later() }) { Text("Später") } },
+        )
+    }
+}
+
+/** F3: Untis named no own timetable (anonymous access, some parent accounts). One tap fixes it. */
+@Composable
+private fun OwnMissing(profile: Profile, onSetOwn: () -> Unit, onPick: () -> Unit, onSettings: () -> Unit) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Spacer(Modifier.height(24.dp))
+        Text("Kein eigener Plan", fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
+        Text(
+            if (profile.anonymous) "Ohne Anmeldung kennt Untis dich nicht. Wähl deine Klasse, dann ist sie dein Plan."
+            else "Untis liefert für dein Konto keinen eigenen Stundenplan. Das passiert bei manchen Schulen und Eltern-Konten. Wähl deine Klasse als eigenen Plan.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Button(onClick = onSetOwn) { Text("Klasse als eigenen Plan setzen") }
+        OutlinedButton(onClick = onPick) { Text("Anderen Plan ansehen") }
+        TextButton(onClick = onSettings) { Text("Einstellungen und Verbindungstest") }
+    }
+}
+
+@Composable
+private fun LinkConfirm(repo: Repo, l: SetSchool, onDone: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Spacer(Modifier.height(24.dp))
+        Text("Mit diesem Untis-Zugang anmelden?", fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+        Card {
+            Text("Schule: ${l.school}")
+            Text("Server: ${l.server}")
+            Text("Benutzer: ${l.user ?: "ohne Anmeldung"}")
+        }
+        if (repo.profile.value != null) Text("Dein bisheriger Zugang in Stundenblick wird dabei ersetzt.", color = LocalSignals.current.changed)
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        Button(enabled = !busy, onClick = {
+            busy = true
+            scope.launch {
+                runCatching { repo.login(Profile(l.server, l.school, "", l.user, l.key)) }
+                    .onSuccess { onDone() }.onFailure { error = Errors.explain(it) }
+                busy = false
+            }
+        }) { Text(if (busy) "Melde an …" else "Anmelden") }
+        TextButton(onClick = onDone, enabled = !busy) { Text("Abbrechen") }
+    }
+}
+
+@Composable
+private fun Card(content: @Composable () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp)).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) { content() }
+}
+
+@Composable
+private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var pasted by remember { mutableStateOf("") }
+    var query by remember { mutableStateOf("") }
+    var results by remember { mutableStateOf<List<School>?>(null) }
+    var school by remember { mutableStateOf<School?>(null) }
+    var user by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var code by remember { mutableStateOf("") }
+    var needsCode by remember { mutableStateOf(false) }
+
+    fun run(block: suspend () -> Unit) {
+        if (busy) return
+        busy = true
+        error = null
+        scope.launch {
+            runCatching { block() }.onFailure {
+                if (it is UntisException && it.code == Errors.TWO_FACTOR) needsCode = true
+                error = Errors.explain(it)
+            }
+            busy = false
+        }
+    }
+
+    BackHandler(enabled = school != null) { school = null; error = null; needsCode = false }
+    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Spacer(Modifier.height(12.dp))
+        Text("Stundenblick", fontSize = 32.sp, fontWeight = FontWeight.Bold)
+        Text("Alle Stundenpläne deiner Schule, die Untis für dich freigibt: Klassen, Lehrkräfte, Räume. Mit Ausfällen, Vertretungen und Klausuren auf einen Blick.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        if (busy) CircularProgressIndicator()
+
+        val s = school
+        if (s == null) {
+            Card {
+                Text("Mit QR-Code aus WebUntis", fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                Text("Der sicherste Weg, auch mit Zwei-Faktor-Anmeldung: WebUntis im Browser öffnen → Profil → Freigaben → „Anzeigen“. Scanne den QR-Code mit der Kamera-App, sie öffnet Stundenblick. Oder kopiere den Link darunter und füge ihn hier ein.",
+                    fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedTextField(pasted, { pasted = it }, Modifier.fillMaxWidth(), placeholder = { Text("untis://setschool?…") }, singleLine = true)
+                Button(enabled = pasted.isNotBlank() && !busy, onClick = {
+                    val l = Parse.setSchool(pasted)
+                    if (l == null) error = "Das ist kein gültiger Untis-Link." else run { repo.login(Profile(l.server, l.school, "", l.user, l.key)); onDone() }
+                }) { Text("Link übernehmen") }
+            }
+            Card {
+                Text("Schule suchen", fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                OutlinedTextField(
+                    query, { query = it }, Modifier.fillMaxWidth(), placeholder = { Text("Name oder Ort der Schule") }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { if (query.length >= 3) run { results = withContext(Dispatchers.IO) { Untis.searchSchools(query.trim()) } } }),
+                )
+                Button(enabled = query.trim().length >= 3 && !busy, onClick = { run { results = withContext(Dispatchers.IO) { Untis.searchSchools(query.trim()) } } }) { Text("Suchen") }
+                results?.let { list ->
+                    if (list.isEmpty()) Text("Keine Schule gefunden.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    list.forEach { r ->
+                        HorizontalDivider(color = LocalSignals.current.line)
+                        Column(Modifier.fillMaxWidth().clickable { school = r; error = null }.padding(vertical = 8.dp)) {
+                            Text(r.name, fontWeight = FontWeight.Medium)
+                            if (r.address.isNotBlank()) Text(r.address, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+            TextButton(onClick = { run { repo.login(Demo.profile); onDone() } }) { Text("Erst mal die Demo-Schule ansehen") }
+            Text("Nicht mit der Untis GmbH verbunden. Dein Passwort wird nicht gespeichert, nur der Zugangsschlüssel, den Untis dafür ausgibt.",
+                fontSize = 12.sp, color = LocalSignals.current.muted)
+        } else {
+            Card {
+                Text(s.name, fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                if (s.address.isNotBlank()) Text(s.address, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedTextField(user, { user = it }, Modifier.fillMaxWidth(), label = { Text("Benutzername") }, singleLine = true)
+                OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text("Passwort") }, singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+                if (needsCode) OutlinedTextField(code, { code = it.filter(Char::isDigit).take(6) }, Modifier.fillMaxWidth(), label = { Text("6-stelliger Code") },
+                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
+                Button(enabled = user.isNotBlank() && password.isNotBlank() && !busy, onClick = {
+                    run {
+                        val secret = withContext(Dispatchers.IO) { Untis.appSecret(s.server, s.login, user.trim(), password, code.ifBlank { null }) }
+                        repo.login(Profile(s.server, s.login, s.name, user.trim(), secret))
+                        password = ""
+                        onDone()
+                    }
+                }) { Text("Anmelden") }
+                OutlinedButton(enabled = !busy, onClick = { run { repo.login(Profile(s.server, s.login, s.name, null, null)); onDone() } }) { Text("Ohne Anmeldung: öffentlicher Plan") }
+                TextButton(onClick = { school = null; error = null; needsCode = false }) { Text("Andere Schule") }
+            }
+        }
+    }
+}

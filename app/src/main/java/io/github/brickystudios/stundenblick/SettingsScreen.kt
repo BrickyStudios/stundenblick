@@ -1,0 +1,181 @@
+package io.github.brickystudios.stundenblick
+
+import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+
+const val REPO_URL = "https://github.com/BrickyStudios/stundenblick"
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(repo: Repo, current: Element, onBack: () -> Unit, onSetOwn: () -> Unit, onLoggedOut: () -> Unit) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val p = repo.profile.value
+    val master = repo.master.value
+    var notify by remember { mutableStateOf(repo.notify) }
+    var updates by remember { mutableStateOf(repo.updates) }
+    var diag by remember { mutableStateOf<String?>(null) }
+    var testing by remember { mutableStateOf(false) }
+    val note by Updater.note.collectAsState()
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        notify = granted
+        repo.notify = granted
+        ChangeJob.schedule(ctx, granted)
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Einstellungen", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück") } },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { pad ->
+        Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Section("Konto") {
+                Text(p?.schoolName?.ifBlank { p.school } ?: "—", fontWeight = FontWeight.SemiBold)
+                Text(
+                    when {
+                        p == null -> ""
+                        p.demo -> "Demo-Schule mit erfundenen Daten"
+                        p.anonymous -> "Ohne Anmeldung: nur öffentliche Pläne"
+                        else -> "Angemeldet als ${p.user}"
+                    },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp,
+                )
+                OutlinedButton(onClick = { repo.logout(); ChangeJob.schedule(ctx, false); DayWidget.update(ctx); onLoggedOut() }) { Text("Abmelden und alles löschen") }
+            }
+
+            Section("Mein Plan") {
+                val own = repo.own.value
+                Text(own?.let { "${it.kind.label} ${it.longName.ifBlank { "" }}".trim() } ?: "Keiner gesetzt", fontSize = 15.sp)
+                TextButton(onClick = onSetOwn) { Text("Klasse als eigenen Plan setzen") }
+            }
+
+            Section("Kurse ausblenden · ${current.name}") {
+                // subjects that actually occur in the loaded weeks of this plan, so the list stays short
+                val monday = Parse.monday(LocalDate.now())
+                val ids = listOf(monday, monday.plusWeeks(1)).flatMap { (repo.weeks[repo.weekKey(current, it)]?.periods ?: repo.cachedPeriods(current, it)).orEmpty() }
+                    .mapNotNull { it.subjectId }.toSet()
+                val subjects = ids.mapNotNull { master?.find(Kind.SUBJECT, it) }.sortedBy { it.name }
+                var hidden by remember(current.key) { mutableStateOf(repo.hidden(current)) }
+                if (subjects.isEmpty()) Text("Öffne den Plan einmal, dann stehen hier seine Fächer.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                else Text("Abgehakt = sichtbar. Für die Oberstufe: Kurse, die du nicht hast, abwählen.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                subjects.forEach { sub ->
+                    Row(Modifier.fillMaxWidth().clickable {
+                        hidden = if (sub.id in hidden) hidden - sub.id else hidden + sub.id
+                        repo.setHidden(current, hidden)
+                    }, verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(sub.id !in hidden, null)
+                        Text(sub.title, fontSize = 15.sp)
+                    }
+                }
+                if (subjects.isNotEmpty() && subjects.all { it.id in hidden }) Text("Alles ausgeblendet: der Plan bleibt leer.", color = LocalSignals.current.changed, fontSize = 13.sp)
+            }
+
+            Section("Benachrichtigungen") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Bei Ausfall, Vertretung, Raumänderung und Klausur im eigenen Plan melden", Modifier.weight(1f), fontSize = 15.sp)
+                    Switch(notify, { on ->
+                        if (on && Build.VERSION.SDK_INT >= 33) ask.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        else { notify = on; repo.notify = on; ChangeJob.schedule(ctx, on) }
+                    }, enabled = repo.own.value != null)
+                }
+                Text("Prüft einmal pro Stunde die nächsten 7 Tage, nur mit Netz.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+            }
+
+            Section("Updates") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Beim Start auf GitHub nach neuen Versionen sehen", Modifier.weight(1f), fontSize = 15.sp)
+                    Switch(updates, { updates = it; repo.updates = it })
+                }
+                TextButton(onClick = { scope.launch { Updater.check(ctx, manual = true) } }) { Text("Jetzt prüfen") }
+                note?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp) }
+            }
+
+            Section("Verbindungstest") {
+                Text("Prüft Schritt für Schritt, was Untis für dein Konto liefert. Das Ergebnis enthält keinen Namen, kein Passwort und keinen Schlüssel, du kannst es in ein GitHub-Issue kopieren.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                Button(onClick = { testing = true; scope.launch { diag = repo.connectionTest(); testing = false } }, enabled = !testing) {
+                    Text(if (testing) "Prüfe …" else "Verbindung testen")
+                }
+                diag?.let { text ->
+                    SelectionContainer { Text(text, fontFamily = FontFamily.Monospace, fontSize = 12.sp) }
+                    TextButton(onClick = {
+                        ctx.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Stundenblick Verbindungstest", text))
+                    }) { Text("Kopieren") }
+                }
+            }
+
+            Section("Über") {
+                Text("Stundenblick ${BuildConfig.VERSION_NAME}", fontWeight = FontWeight.SemiBold)
+                Text("Nicht mit der Untis GmbH verbunden. Stundenblick zeigt alles, was deine Schule für dein Konto freigibt, aber nicht mehr. Daten gehen nur an den WebUntis-Server deiner Schule und, für Updates, an GitHub.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                Text("Freie Software (GPL-3.0)", fontSize = 13.sp)
+                TextButton(onClick = { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(REPO_URL))) }) { Text("Quellcode und Fehler melden") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Section(title: String, content: @Composable () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp)).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+        content()
+    }
+}

@@ -1,0 +1,63 @@
+name: Build & Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag (e.g. v1.0.0)'
+        required: true
+
+permissions:
+  contents: write # create the GitHub release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Decode keystore
+        run: |
+          test -n "${{ secrets.KEYSTORE_BASE64 }}" || { echo "KEYSTORE_BASE64 secret missing, run tools/set-secrets.sh"; exit 1; }
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release.jks
+
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest
+
+      - name: Build release APK
+        run: ./gradlew assembleRelease
+        env:
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+
+      - name: Rename APK
+        # same name in every release, so releases/latest/download/Stundenblick.apk always works and the updater finds it
+        run: mkdir -p out && mv app/build/outputs/apk/release/app-release.apk out/Stundenblick.apk
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.value }}
+          name: Stundenblick ${{ steps.tag.outputs.value }}
+          prerelease: ${{ startsWith(steps.tag.outputs.value, 'v0.') }}
+          body: |
+            `Stundenblick.apk`: Android 8.0 oder neuer, läuft ohne Google-Dienste (auch GrapheneOS). Updates kommen über die App selbst (abschaltbar) oder über Obtainium.
+          files: out/Stundenblick.apk
