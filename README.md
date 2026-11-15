@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/bilder/social-preview.png" width="860" alt="Stundenblick, Untis-Stundenplan-App für Android: Wochenraster mit Entfall, Vertretung, Raumänderung und Klausur farbig markiert"></p>
+
 <h1 align="center">Stundenblick: Untis-Stundenplan-App für Android, quelloffener Nachfolger von BetterUntis</h1>
 
 <p align="center"><strong>Alle Stundenpläne, die deine Schule in WebUntis für dich freigibt: deine Klasse, andere Klassen, Lehrkräfte, Räume. Ausfall, Vertretung, Raumänderung und Klausur sind farbig markiert, Oberstufenkurse lassen sich ausblenden, der Plan bleibt offline lesbar, und eine Meldung kommt, wenn sich etwas ändert. Ohne Tracking, ohne Google-Dienste, GPL-3.0.</strong></p>
@@ -14,10 +16,15 @@
 </p>
 
 <p align="center">
-  <img src="docs/bilder/week.png" width="200" alt="Wochenansicht mit Entfall (rot), Vertretung und Raumänderung (orange), Klausur (blau) und parallelen Kursen">
-  <img src="docs/bilder/day.png" width="200" alt="Tagesansicht mit vollen Namen, Vertretung durchgestrichen">
-  <img src="docs/bilder/detail.png" width="200" alt="Stunden-Details mit Stundeninhalt und Hausaufgabe">
-  <img src="docs/bilder/login.png" width="200" alt="Anmeldung per QR-Code aus WebUntis oder Schulsuche">
+  <a href="https://github.com/BrickyStudios/stundenblick/releases/latest/download/Stundenblick.apk"><img alt="Stundenblick.apk herunterladen" src="https://img.shields.io/badge/Download-Stundenblick.apk-4352E0?style=for-the-badge&logo=android&logoColor=ECEDF2&labelColor=4352E0&color=14161D"></a>
+  <a href="https://brickystudios.github.io/stundenblick/"><img alt="Website" src="https://img.shields.io/badge/Website-Deutsch-14161D?style=for-the-badge&labelColor=14161D&color=232A5C"></a>
+</p>
+
+<p align="center">
+  <img src="docs/bilder/1-woche.png" width="200" alt="Die ganze Woche auf einen Blick: Wochenraster mit Entfall, Vertretung, Raumänderung und Klausur">
+  <img src="docs/bilder/2-tag.png" width="200" alt="Tagesansicht mit vollen Namen, die vertretene Lehrkraft durchgestrichen">
+  <img src="docs/bilder/3-details.png" width="200" alt="Stunden-Details mit Stundeninhalt und Hausaufgabe">
+  <img src="docs/bilder/4-anmelden.png" width="200" alt="Anmeldung per QR-Code aus WebUntis, auch mit Zwei-Faktor">
 </p>
 <p align="center"><sub>Screenshots aus der eingebauten Demo-Schule. Alle Namen dort sind erfunden.</sub></p>
 

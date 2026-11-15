@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stundenblick: Untis-Stundenplan-App für Android, Alternative zu BetterUntis</title>
+<meta name="description" content="Stundenblick ist eine freie Android-App für WebUntis-Schulen: alle freigegebenen Stundenpläne, Ausfälle und Vertretungen auf einen Blick. Nachfolger von BetterUntis, ohne Tracking.">
+<link rel="canonical" href="https://brickystudios.github.io/stundenblick/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="de_DE">
+<meta property="og:title" content="Stundenblick: dein Untis-Plan, endlich lesbar">
+<meta property="og:description" content="Freie Android-App für WebUntis-Schulen. Ausfall, Vertretung, Raumänderung und Klausur farbig markiert. Nachfolger von BetterUntis.">
+<meta property="og:url" content="https://brickystudios.github.io/stundenblick/">
+<meta property="og:image" content="https://brickystudios.github.io/stundenblick/bilder/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#4352E0">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Hanken+Grotesk:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.classList.add('js');</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Stundenblick",
+  "operatingSystem": "Android 8.0+",
+  "applicationCategory": "EducationalApplication",
+  "description": "Freie Android-App für WebUntis-Schulen: Stundenpläne von Klassen, Lehrkräften und Räumen, Ausfälle und Vertretungen markiert, Kursfilter, Offline-Cache, Meldungen bei Änderungen. Nachfolger von BetterUntis.",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+  "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+  "downloadUrl": "https://github.com/BrickyStudios/stundenblick/releases/latest/download/Stundenblick.apk",
+  "codeRepository": "https://github.com/BrickyStudios/stundenblick",
+  "inLanguage": "de",
+  "screenshot": "https://brickystudios.github.io/stundenblick/bilder/1-woche.png"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Was ist mit BetterUntis passiert?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Abgeschaltet ist nichts: Die Untis-Schnittstelle, die auch Untis Mobile nutzt, liefert weiter Stundenpläne (geprüft am 15.11.2026). BetterUntis hat aber seit der Version 4.0.3 vom 6. November 2023 keine stabile Version mehr bekommen. Stundenblick ist ein neu geschriebener, freier Nachfolger." } },
+    { "@type": "Question", "name": "Welche Untis-Pläne zeigt Stundenblick?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Jeden Stundenplan, den deine Schule für dein Konto freigibt: deine Klasse, andere Klassen, Lehrkräfte, Räume und Fächer, als Woche oder Tag, mit Stundeninhalt und Hausaufgaben. Oberstufenkurse, die du nicht hast, lassen sich ausblenden." } },
+    { "@type": "Question", "name": "Was passiert, wenn eine Stunde ausfällt?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Entfall ist rot und durchgestrichen, Vertretung und Raumänderung orange mit dem alten Namen daneben, Klausuren blau. Einmal pro Stunde prüft die App die nächsten 7 Tage und meldet neue Änderungen." } },
+    { "@type": "Question", "name": "Reicht der QR-Code aus WebUntis?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Ja, der QR-Code aus WebUntis (Profil, Freigaben, Anzeigen) ist der einfachste Weg und klappt auch mit Zwei-Faktor-Anmeldung. Alternativ mit Benutzername und Passwort oder ohne Anmeldung, wenn die Schule öffentliche Pläne hat." } },
+    { "@type": "Question", "name": "Was braucht mein Handy?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Android 8.0 oder neuer. Google-Dienste sind nicht nötig, die App läuft auch auf GrapheneOS. Das APK ist 1,3 MB groß. Die App spricht nur mit dem WebUntis-Server deiner Schule und für Updates mit GitHub; das Passwort wird nie gespeichert." } }
+  ]
+}
+</script>
+</head>
+<body>
+
+<div class="banner">
+  <div class="container">
+    <p>Testversion 0.9: Die Anmeldung mit echtem Konto ist noch ungetestet.</p>
+    <a href="https://github.com/BrickyStudios/stundenblick/issues">Fehler melden</a>
+  </div>
+</div>
+<header class="bar" data-bar>
+  <div class="container">
+    <a class="wordmark" href="#" aria-label="Stundenblick, zum Anfang">Stundenblick</a>
+    <a class="link" href="https://github.com/BrickyStudios/stundenblick/releases/latest/download/Stundenblick.apk"><span>APK laden</span></a>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="container">
+      <div>
+        <h1>Dein Untis-Plan, endlich lesbar</h1>
+        <p class="lead">Android-App für WebUntis-Schulen, als freier Nachfolger von BetterUntis.</p>
+        <div class="actions">
+          <a class="btn" href="https://github.com/BrickyStudios/stundenblick/releases/latest/download/Stundenblick.apk">Stundenblick.apk laden</a>
+          <a class="link" href="https://github.com/BrickyStudios/stundenblick"><span>Quellcode lesen</span></a>
+        </div>
+      </div>
+      <figure class="shot" style="aspect-ratio: 1080 / 1125" data-slot="hero" data-kind="product" data-alt="Wochenansicht der App mit Entfall, Vertretung und Klausur">
+        <img src="bilder/app/week-crop.png" width="1080" height="1125" fetchpriority="high"
+             alt="Wochenansicht der Demo-Schule: Mittwoch markiert, eine rote Jetzt-Linie, Geschichte am Dienstag rot durchgestrichen, Mathe am Mittwoch orange mit Vertretung, Freitag blau umrandet für eine Klausur">
+      </figure>
+    </div>
+  </div>
+
+  <section id="betteruntis">
+    <div class="container">
+      <h2>Was ist mit BetterUntis passiert?</h2>
+      <p class="answer">Abgeschaltet ist nichts. Die Schnittstelle von Untis Mobile liefert weiter Pläne, nur gepflegt wird BetterUntis nicht mehr.</p>
+      <table class="compare">
+        <thead><tr><th scope="col"></th><th scope="col">BetterUntis</th><th scope="col">Stundenblick</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Letzte stabile Version</th><td>4.0.3 vom 6. November 2023</td><td>0.9 vom November 2026</td></tr>
+          <tr><th scope="row">Eigener Plan leer</th><td>offenes Issue #503</td><td>ein Tipp: Klasse als eigenen Plan setzen</td></tr>
+          <tr><th scope="row">Schnittstelle</th><td>die interne von Untis Mobile</td><td>dieselbe, am 15.11.2026 geprüft</td></tr>
+          <tr><th scope="row">Lizenz</th><td>GPL-3.0</td><td>GPL-3.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="ansichten" class="band-sand tight">
+    <div class="container">
+      <h2>Welche Untis-Pläne zeigt Stundenblick?</h2>
+      <p class="answer">Jeden Plan, den deine Schule für dein Konto freigibt: deine Klasse, andere Klassen, Lehrkräfte, Räume.</p>
+      <div data-switch>
+        <div class="tabs" role="tablist" aria-label="Ansichten">
+          <button type="button" role="tab" id="t-tag" aria-controls="p-tag" aria-selected="true">Tag</button>
+          <button type="button" role="tab" id="t-stunde" aria-controls="p-stunde" aria-selected="false" tabindex="-1">Stunde</button>
+          <button type="button" role="tab" id="t-kurse" aria-controls="p-kurse" aria-selected="false" tabindex="-1">Kurse</button>
+        </div>
+        <div class="panel" role="tabpanel" id="p-tag" aria-labelledby="t-tag">
+          <div><h3>Der Tag mit vollen Namen</h3><p>Wer unterrichtet, in welchem Raum, und wer eigentlich dran gewesen wäre.</p></div>
+          <figure class="shot" style="aspect-ratio: 1080 / 1506" data-slot="tag" data-kind="product" data-alt="Tagesansicht"><img src="bilder/app/day-crop.png" width="1080" height="1506" loading="lazy" alt="Tagesansicht: Mathematik mit Vertretung, die alte Lehrkraft durchgestrichen"></figure>
+        </div>
+        <div class="panel" role="tabpanel" id="p-stunde" aria-labelledby="t-stunde" hidden>
+          <div><h3>Jede Stunde im Detail</h3><p>Stundeninhalt und Hausaufgaben, sobald die Lehrkraft sie in WebUntis einträgt.</p></div>
+          <figure class="shot" style="aspect-ratio: 1080 / 900" data-slot="stunde" data-kind="product" data-alt="Stunden-Details"><img src="bilder/app/detail-crop.png" width="1080" height="900" loading="lazy" alt="Details einer Mathestunde mit Stundeninhalt und Hausaufgabe"></figure>
+        </div>
+        <div class="panel" role="tabpanel" id="p-kurse" aria-labelledby="t-kurse" hidden>
+          <div><h3>Nur deine Kurse</h3><p>In der Oberstufe wählst du pro Plan ab, welche Fächer du nicht hast.</p></div>
+          <figure class="shot" style="aspect-ratio: 1080 / 1076" data-slot="kurse" data-kind="product" data-alt="Kursfilter in den Einstellungen"><img src="bilder/app/kurse-crop.png" width="1080" height="1076" loading="lazy" alt="Einstellungen mit Kursfilter: Biologie und Physik abgewählt"></figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="aenderungen">
+    <div class="container">
+      <h2>Was passiert, wenn eine Stunde ausfällt?</h2>
+      <dl class="rows">
+        <div><dt>Entfall</dt><dd>Rot und durchgestrichen, im Raster wie in der Tagesliste.</dd></div>
+        <div><dt>Vertretung und Raumänderung</dt><dd>Orange, der neue Name vorn, der alte durchgestrichen daneben.</dd></div>
+        <div><dt>Klausur</dt><dd>Blau umrandet, mit der Art der Prüfung.</dd></div>
+        <div><dt>Meldung aufs Handy</dt><dd>Einmal pro Stunde prüft die App die nächsten 7 Tage. So sieht eine Meldung aus:<span class="sample">„Di. 17.11., 3. Std.: Ge entfällt“</span></dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section id="anmelden" class="tight">
+    <div class="container split">
+      <div>
+        <h2>Reicht der QR-Code aus WebUntis?</h2>
+        <p class="answer">Ja, er ist der einfachste Weg, auch mit Zwei-Faktor-Anmeldung.</p>
+        <dl class="ways">
+          <div><dt>QR-Code</dt><dd>WebUntis im Browser, Profil, Freigaben, Anzeigen. Mit der Kamera scannen.</dd></div>
+          <div><dt>Benutzername und Passwort</dt><dd>Schule suchen, anmelden. Gespeichert wird nur der Schlüssel von Untis.</dd></div>
+          <div><dt>Ohne Anmeldung</dt><dd>Wenn deine Schule öffentliche Pläne hat. Oder erst mal die Demo-Schule.</dd></div>
+        </dl>
+      </div>
+      <figure class="shot" style="aspect-ratio: 1080 / 1590" data-slot="anmelden" data-kind="product" data-alt="Anmeldebildschirm"><img src="bilder/app/login-crop.png" width="1080" height="1590" loading="lazy" alt="Anmeldung: QR-Link einfügen oder Schule suchen"></figure>
+    </div>
+  </section>
+
+  <section id="handy" class="loose">
+    <div class="container">
+      <h2>Was braucht mein Handy?</h2>
+      <dl class="spec">
+        <div><dt>Android</dt><dd>8.0 oder neuer</dd></div>
+        <div><dt>Google-Dienste</dt><dd>nicht nötig, auch GrapheneOS</dd></div>
+        <div><dt>Download</dt><dd>1,3&nbsp;MB</dd></div>
+        <div><dt>Verbindungen</dt><dd>WebUntis und GitHub</dd></div>
+        <div><dt>Passwort</dt><dd>wird nie gespeichert</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section id="laden" class="band-indigo">
+    <div class="container split">
+      <div>
+        <h2>Probier es an der Demo-Schule</h2>
+        <p class="answer">Ohne Konto, mit erfundenen Daten. Hell und dunkel, wie dein Handy eingestellt ist.</p>
+        <div class="actions">
+          <a class="btn" href="https://github.com/BrickyStudios/stundenblick/releases/latest/download/Stundenblick.apk">Stundenblick.apk laden</a>
+          <a class="link" href="https://github.com/BrickyStudios/stundenblick/releases"><span>Alle Versionen</span></a>
+        </div>
+      </div>
+      <figure class="shot" style="aspect-ratio: 1080 / 1125" data-slot="dunkel" data-kind="product" data-alt="Wochenansicht im Dunkelmodus"><img src="bilder/app/dark-crop.png" width="1080" height="1125" loading="lazy" alt="Wochenansicht im Dunkelmodus, Biologie und Physik ausgeblendet"></figure>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <p class="closing">Freie Software für alle, deren Schule Untis nutzt.</p>
+    <nav class="foot-links" aria-label="Links">
+      <a href="https://github.com/BrickyStudios/stundenblick">Quellcode</a>
+      <a href="https://github.com/BrickyStudios/stundenblick/issues">Fehler melden</a>
+      <a href="https://github.com/BrickyStudios/stundenblick/releases">Versionen</a>
+      <a href="https://github.com/SapuSeven/BetterUntis">BetterUntis</a>
+    </nav>
+    <p class="legal">Nicht mit der Untis GmbH verbunden. Untis und WebUntis sind Marken der Untis GmbH. Screenshots aus der eingebauten Demo-Schule, alle Namen erfunden.</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  // tabs: arrow keys move, Enter or click selects; without script every panel shows in order
+  document.querySelectorAll('[data-switch]').forEach((sw) => {
+    const tabs = [...sw.querySelectorAll('[role="tab"]')];
+    const pick = (t) => tabs.forEach((x) => {
+      const on = x === t;
+      x.setAttribute('aria-selected', on);
+      x.tabIndex = on ? 0 : -1;
+      document.getElementById(x.getAttribute('aria-controls')).hidden = !on;
+    });
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => pick(t));
+      t.addEventListener('keydown', (e) => {
+        const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (!d) return;
+        const n = tabs[(i + d + tabs.length) % tabs.length];
+        pick(n);
+        n.focus();
+      });
+    });
+  });
+  // the bar slides away while scrolling down and returns on the way up
+  const bar = document.querySelector('[data-bar]');
+  let last = scrollY, queued = false;
+  addEventListener('scroll', () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      const y = scrollY;
+      bar.classList.toggle('is-away', y > last && y > 200 && !bar.contains(document.activeElement));
+      last = y;
+      queued = false;
+    });
+  }, { passive: true });
+})();
+</script>
+<script>window.hallmarkSlots = (m) => { for (const [k, v] of Object.entries(m)) { const s = document.querySelector(`[data-slot="${k}"]`); if (!s) continue; const im = new Image(); im.src = typeof v === 'string' ? v : v.src; im.alt = (typeof v === 'object' && v.alt) || s.dataset.alt || ''; s.querySelectorAll(':scope > img').forEach((o) => o.remove()); s.prepend(im); } };
+document.querySelectorAll('[data-slot] img').forEach((i) => { if (i.complete && !i.naturalWidth) i.remove(); else i.addEventListener('error', () => i.remove(), { once: true }); });</script>
+</body>
+</html>
