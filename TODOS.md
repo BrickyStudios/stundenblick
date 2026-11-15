@@ -12,7 +12,6 @@ Verbindliche Spezifikation: `~/.gstack/projects/BrickyStudios-stundenblick/plans
 
 - **IzzyOnDroid-Antrag** (fastlane-Metadaten). Updater ist schon abschaltbar.
 - **Testwoche** mit etwa 5 Leuten aus der Stufe: welche Heute-Karte sehen sie wirklich an?
-- **Website** um Heute-Seite, Raumfinder und Pausen-Info ergänzen (Screens aus der Demo).
 
 ## Später
 

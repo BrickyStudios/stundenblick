@@ -7,8 +7,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const app = (f) => `file://${root}/docs/bilder/app/${f}`;
 const images = [
   ["1-woche.png", 1080, 1920, "tall", "Die ganze Woche|auf einen Blick", "Entfall, Vertretung, Raum, Klausur", app("week.png")],
-  ["2-tag.png", 1080, 1920, "tall", "Wer, wo, statt wem", "Tagesansicht mit vollen Namen", app("day.png")],
-  ["3-details.png", 1080, 1920, "tall", "Stoff und|Hausaufgaben", "pro Stunde, wenn die Schule sie einträgt", app("detail.png")],
+  ["2-heute.png", 1080, 1920, "tall", "Was jetzt|dran ist", "Restminuten, nächste Stunde, Hausaufgaben", app("heute.png")],
+  ["3-schule.png", 1080, 1920, "tall", "Welcher Raum|gerade frei ist", "für die ganze Schule, Stunde für Stunde", app("schule.png")],
   ["4-anmelden.png", 1080, 1920, "tall", "QR-Code scannen,|fertig", "auch mit Zwei-Faktor und IServ", app("login.png")],
   ["social-preview.png", 1280, 640, "wide", "Dein Untis-Plan,|endlich lesbar", "Android-App · Nachfolger von BetterUntis · GPL-3.0", app("week.png")],
 ];

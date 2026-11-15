@@ -2,7 +2,7 @@
 
 <h1 align="center">Stundenblick: Untis-Stundenplan-App für Android, quelloffener Nachfolger von BetterUntis</h1>
 
-<p align="center"><strong>Alle Stundenpläne, die deine Schule in WebUntis für dich freigibt: deine Klasse, andere Klassen, Lehrkräfte, Räume. Ausfall, Vertretung, Raumänderung und Klausur sind farbig markiert, Oberstufenkurse lassen sich ausblenden, der Plan bleibt offline lesbar, und eine Meldung kommt, wenn sich etwas ändert. Ohne Tracking, ohne Google-Dienste, GPL-3.0.</strong></p>
+<p align="center"><strong>Alle Stundenpläne, die deine Schule in WebUntis für dich freigibt: deine Klasse, andere Klassen, Lehrkräfte, Räume. Ausfall, Vertretung, Raumänderung und Klausur sind farbig markiert, freie Räume der ganzen Schule stehen auf einen Blick bereit, Oberstufenkurse lassen sich ausblenden, der Plan bleibt offline lesbar, und eine Meldung kommt, wenn sich etwas ändert. Ohne Tracking, ohne Google-Dienste, GPL-3.0.</strong></p>
 
 <p align="center">
   <a href="https://kotlinlang.org/"><img alt="Made with Kotlin" src="https://img.shields.io/badge/made_with-Kotlin-14161D?style=for-the-badge&logo=kotlin&logoColor=8E99FF"></a>
@@ -22,8 +22,8 @@
 
 <p align="center">
   <img src="docs/bilder/1-woche.png" width="200" alt="Die ganze Woche auf einen Blick: Wochenraster mit Entfall, Vertretung, Raumänderung und Klausur">
-  <img src="docs/bilder/2-tag.png" width="200" alt="Tagesansicht mit vollen Namen, die vertretene Lehrkraft durchgestrichen">
-  <img src="docs/bilder/3-details.png" width="200" alt="Stunden-Details mit Stundeninhalt und Hausaufgabe">
+  <img src="docs/bilder/2-heute.png" width="200" alt="Heute-Seite: laufende Stunde mit Restminuten, nächste Stunde, Hausaufgaben bis morgen">
+  <img src="docs/bilder/3-schule.png" width="200" alt="Freie Räume der ganzen Schule in der 3. Stunde, jeweils frei bis wann">
   <img src="docs/bilder/4-anmelden.png" width="200" alt="Anmeldung per QR-Code aus WebUntis, auch mit Zwei-Faktor">
 </p>
 <p align="center"><sub>Screenshots aus der eingebauten Demo-Schule. Alle Namen dort sind erfunden.</sub></p>
@@ -45,7 +45,7 @@
 - **Pausen-Info** wie bei BetterUntis: in jeder Pause still die nächste Stunde mit Raum.
 - **Stunden-Details:** Stundeninhalt, Hausaufgaben und Infotext, soweit die Schule sie einträgt.
 - **Kurse ausblenden:** in den Einstellungen oder per langem Druck auf eine Stunde, mit Rückgängig.
-- **Offline, Meldungen, Widget:** geladene Wochen bleiben gespeichert; einmal pro Stunde meldet die App neue Ausfälle, Vertretungen, Raumänderungen und Klausuren; das Widget zeigt den Tag.
+- **Offline, Meldungen, Widget:** geladene Wochen bleiben gespeichert; einmal pro Stunde prüft die App diese und die nächste Woche und meldet neue Ausfälle, Vertretungen, Raumänderungen und Klausuren; das Widget zeigt den Tag.
 - **Änderungsverlauf** der letzten 60 Tage und ein **Verbindungstest**, der zeigt, welche Infos deine Schule freigibt (Klausuren, Hausaufgaben, Nachrichten, Sprechstunden, Fehlzeiten), ohne Inhalte auszugeben.
 - **Demo-Schule:** ausprobieren ohne Konto.
 
@@ -53,6 +53,7 @@
 
 - Sie zeigt nur, was deine Schule für dein Konto freigibt. Blendet die Schule Lehrkräfte oder fremde Klassen aus, fehlen sie auch hier.
 - Abwesenheiten melden und Nachrichten schreiben fehlen bewusst.
+- Die voraussichtliche Woche kennt keine A/B-Wochen: sie übernimmt immer die nächstgelegene frühere Woche.
 - Nur Android. Eine iOS-Version bräuchte ein Apple-Entwicklerkonto und die App-Store-Prüfung.
 
 ## Installieren
@@ -76,7 +77,7 @@
 ./gradlew testDebugUnitTest assembleDebug   # JDK 17
 ```
 
-Die Tests prüfen den Einmal-Code (RFC-6238-Vektoren), den QR-Link inklusive fremder Server, die Fehlertexte, den Parser an der Demo-Schule, den Kursfilter, den Abgleich für Meldungen und dass der Verbindungstest keine Geheimnisse enthält.
+Die Tests prüfen den Einmal-Code (RFC-6238-Vektoren), den QR-Link inklusive fremder Server, die Fehlertexte, den Parser an der Demo-Schule, den Kursfilter, den Abgleich für Meldungen, dass der Verbindungstest keine Geheimnisse enthält, Doppelstunden, Pausen und Freistunden, die freien Räume, die voraussichtliche Woche und das Info Center.
 
 ## Rechtliches
 

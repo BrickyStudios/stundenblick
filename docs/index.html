@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stundenblick: Untis-Stundenplan-App für Android, Alternative zu BetterUntis</title>
-<meta name="description" content="Stundenblick ist eine freie Android-App für WebUntis-Schulen: alle freigegebenen Stundenpläne, Ausfälle und Vertretungen auf einen Blick. Nachfolger von BetterUntis, ohne Tracking.">
+<meta name="description" content="Stundenblick ist eine freie Android-App für WebUntis-Schulen: alle freigegebenen Stundenpläne, Ausfälle und Vertretungen, freie Räume und Klausuren auf einen Blick. Nachfolger von BetterUntis, ohne Tracking.">
 <link rel="canonical" href="https://brickystudios.github.io/stundenblick/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="de_DE">
@@ -27,7 +27,7 @@
   "name": "Stundenblick",
   "operatingSystem": "Android 8.0+",
   "applicationCategory": "EducationalApplication",
-  "description": "Freie Android-App für WebUntis-Schulen: Stundenpläne von Klassen, Lehrkräften und Räumen, Ausfälle und Vertretungen markiert, Kursfilter, Offline-Cache, Meldungen bei Änderungen. Nachfolger von BetterUntis.",
+  "description": "Freie Android-App für WebUntis-Schulen: Stundenpläne von Klassen, Lehrkräften und Räumen, Ausfälle und Vertretungen markiert, freie Räume der ganzen Schule, Klausuren, Hausaufgaben und Fehlzeiten, Kursfilter, Offline-Cache, Meldungen bei Änderungen. Nachfolger von BetterUntis.",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
   "license": "https://www.gnu.org/licenses/gpl-3.0.html",
   "downloadUrl": "https://github.com/BrickyStudios/stundenblick/releases/latest/download/Stundenblick.apk",
@@ -45,12 +45,14 @@
       "acceptedAnswer": { "@type": "Answer", "text": "Abgeschaltet ist nichts: Die Untis-Schnittstelle, die auch Untis Mobile nutzt, liefert weiter Stundenpläne (geprüft am 15.11.2026). BetterUntis hat aber seit der Version 4.0.3 vom 6. November 2023 keine stabile Version mehr bekommen. Stundenblick ist ein neu geschriebener, freier Nachfolger." } },
     { "@type": "Question", "name": "Welche Untis-Pläne zeigt Stundenblick?",
       "acceptedAnswer": { "@type": "Answer", "text": "Jeden Stundenplan, den deine Schule für dein Konto freigibt: deine Klasse, andere Klassen, Lehrkräfte, Räume und Fächer, als Woche oder Tag, mit Stundeninhalt und Hausaufgaben. Oberstufenkurse, die du nicht hast, lassen sich ausblenden." } },
+    { "@type": "Question", "name": "Was zeigt Stundenblick, das Untis Mobile nicht zeigt?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Eine Heute-Seite mit Restminuten und nächster Stunde, die freien Räume der ganzen Schule für jede Stunde, ein Info Center mit Klausuren, Hausaufgaben zum Abhaken, Fehlzeiten und Sprechstunden, und die ganze Woche im Voraus, auch wenn die Schule nur den nächsten Tag freigibt." } },
     { "@type": "Question", "name": "Was passiert, wenn eine Stunde ausfällt?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Entfall ist rot und durchgestrichen, Vertretung und Raumänderung orange mit dem alten Namen daneben, Klausuren blau. Einmal pro Stunde prüft die App die nächsten 7 Tage und meldet neue Änderungen." } },
+      "acceptedAnswer": { "@type": "Answer", "text": "Entfall ist rot und durchgestrichen, Vertretung und Raumänderung orange mit dem alten Namen daneben, Klausuren blau. Einmal pro Stunde prüft die App diese und die nächste Woche und meldet neue Änderungen." } },
     { "@type": "Question", "name": "Reicht der QR-Code aus WebUntis?",
       "acceptedAnswer": { "@type": "Answer", "text": "Ja, der QR-Code aus WebUntis (Profil, Freigaben, Anzeigen) ist der einfachste Weg und klappt auch mit Zwei-Faktor-Anmeldung. Alternativ mit Benutzername und Passwort oder ohne Anmeldung, wenn die Schule öffentliche Pläne hat." } },
     { "@type": "Question", "name": "Was braucht mein Handy?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Android 8.0 oder neuer. Google-Dienste sind nicht nötig, die App läuft auch auf GrapheneOS. Das APK ist 1,3 MB groß. Die App spricht nur mit dem WebUntis-Server deiner Schule und für Updates mit GitHub; das Passwort wird nie gespeichert." } }
+      "acceptedAnswer": { "@type": "Answer", "text": "Android 8.0 oder neuer. Google-Dienste sind nicht nötig, die App läuft auch auf GrapheneOS. Das APK ist 1,4 MB groß. Die App spricht nur mit dem WebUntis-Server deiner Schule und für Updates mit GitHub; das Passwort wird nie gespeichert." } }
   ]
 }
 </script>
@@ -59,7 +61,7 @@
 
 <div class="banner">
   <div class="container">
-    <p>Testversion 0.9: Die Anmeldung mit echtem Konto ist noch ungetestet.</p>
+    <p>Testversion 0.11: QR-Anmeldung mit echtem Schulkonto getestet.</p>
     <a href="https://github.com/BrickyStudios/stundenblick/issues">Fehler melden</a>
   </div>
 </div>
@@ -81,9 +83,9 @@
           <a class="link" href="https://github.com/BrickyStudios/stundenblick"><span>Quellcode lesen</span></a>
         </div>
       </div>
-      <figure class="shot" style="aspect-ratio: 1080 / 1125" data-slot="hero" data-kind="product" data-alt="Wochenansicht der App mit Entfall, Vertretung und Klausur">
-        <img src="bilder/app/week-crop.png" width="1080" height="1125" fetchpriority="high"
-             alt="Wochenansicht der Demo-Schule: Mittwoch markiert, eine rote Jetzt-Linie, Geschichte am Dienstag rot durchgestrichen, Mathe am Mittwoch orange mit Vertretung, Freitag blau umrandet für eine Klausur">
+      <figure class="shot" style="aspect-ratio: 1080 / 1218" data-slot="hero" data-kind="product" data-alt="Wochenansicht der App mit Entfall, Vertretung und Klausur">
+        <img src="bilder/app/week-crop.png" width="1080" height="1218" fetchpriority="high"
+             alt="Wochenansicht der Demo-Schule: Mittwoch markiert, eine rote Jetzt-Linie, Geschichte am Dienstag rot durchgestrichen, Mathe am Mittwoch orange mit Vertretung, Donnerstag orange für eine Raumänderung, Freitag blau umrandet für eine Klausur">
       </figure>
     </div>
   </div>
@@ -95,7 +97,8 @@
       <table class="compare">
         <thead><tr><th scope="col"></th><th scope="col">BetterUntis</th><th scope="col">Stundenblick</th></tr></thead>
         <tbody>
-          <tr><th scope="row">Letzte stabile Version</th><td>4.0.3 vom 6. November 2023</td><td>0.9 vom November 2026</td></tr>
+          <tr><th scope="row">Letzte stabile Version</th><td>4.0.3 vom 6. November 2023</td><td>0.11 vom November 2026</td></tr>
+          <tr><th scope="row">Freie Räume</th><td>Raumfinder für gewählte Räume</td><td>alle Räume der Schule, jede Stunde</td></tr>
           <tr><th scope="row">Eigener Plan leer</th><td>offenes Issue #503</td><td>ein Tipp: Klasse als eigenen Plan setzen</td></tr>
           <tr><th scope="row">Schnittstelle</th><td>die interne von Untis Mobile</td><td>dieselbe, am 15.11.2026 geprüft</td></tr>
           <tr><th scope="row">Lizenz</th><td>GPL-3.0</td><td>GPL-3.0</td></tr>
@@ -116,15 +119,46 @@
         </div>
         <div class="panel" role="tabpanel" id="p-tag" aria-labelledby="t-tag">
           <div><h3>Der Tag mit vollen Namen</h3><p>Wer unterrichtet, in welchem Raum, und wer eigentlich dran gewesen wäre.</p></div>
-          <figure class="shot" style="aspect-ratio: 1080 / 1506" data-slot="tag" data-kind="product" data-alt="Tagesansicht"><img src="bilder/app/day-crop.png" width="1080" height="1506" loading="lazy" alt="Tagesansicht: Mathematik mit Vertretung, die alte Lehrkraft durchgestrichen"></figure>
+          <figure class="shot" style="aspect-ratio: 1080 / 1650" data-slot="tag" data-kind="product" data-alt="Tagesansicht"><img src="bilder/app/day-crop.png" width="1080" height="1650" loading="lazy" alt="Tagesansicht mit Pausen: Mathematik mit Vertretung, die alte Lehrkraft durchgestrichen"></figure>
         </div>
         <div class="panel" role="tabpanel" id="p-stunde" aria-labelledby="t-stunde" hidden>
           <div><h3>Jede Stunde im Detail</h3><p>Stundeninhalt und Hausaufgaben, sobald die Lehrkraft sie in WebUntis einträgt.</p></div>
-          <figure class="shot" style="aspect-ratio: 1080 / 900" data-slot="stunde" data-kind="product" data-alt="Stunden-Details"><img src="bilder/app/detail-crop.png" width="1080" height="900" loading="lazy" alt="Details einer Mathestunde mit Stundeninhalt und Hausaufgabe"></figure>
+          <figure class="shot" style="aspect-ratio: 1080 / 935" data-slot="stunde" data-kind="product" data-alt="Stunden-Details"><img src="bilder/app/detail-crop.png" width="1080" height="935" loading="lazy" alt="Details einer Mathestunde mit Stundeninhalt und Hausaufgabe"></figure>
         </div>
         <div class="panel" role="tabpanel" id="p-kurse" aria-labelledby="t-kurse" hidden>
           <div><h3>Nur deine Kurse</h3><p>In der Oberstufe wählst du pro Plan ab, welche Fächer du nicht hast.</p></div>
           <figure class="shot" style="aspect-ratio: 1080 / 1076" data-slot="kurse" data-kind="product" data-alt="Kursfilter in den Einstellungen"><img src="bilder/app/kurse-crop.png" width="1080" height="1076" loading="lazy" alt="Einstellungen mit Kursfilter: Biologie und Physik abgewählt"></figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="mehr-als-untis">
+    <div class="container">
+      <h2>Was zeigt Stundenblick, das Untis Mobile nicht zeigt?</h2>
+      <p class="answer">Alles, was BetterUntis konnte, und mehr.</p>
+      <div data-switch>
+        <div class="tabs" role="tablist" aria-label="Mehr als Untis">
+          <button type="button" role="tab" id="t-heute" aria-controls="p-heute" aria-selected="true">Heute</button>
+          <button type="button" role="tab" id="t-raeume" aria-controls="p-raeume" aria-selected="false" tabindex="-1">Räume</button>
+          <button type="button" role="tab" id="t-info" aria-controls="p-info" aria-selected="false" tabindex="-1">Infos</button>
+          <button type="button" role="tab" id="t-voraus" aria-controls="p-voraus" aria-selected="false" tabindex="-1">Woche</button>
+        </div>
+        <div class="panel" role="tabpanel" id="p-heute" aria-labelledby="t-heute">
+          <div><h3>Was jetzt dran ist</h3><p>Die laufende Stunde mit Restminuten, die nächste, Hausaufgaben bis morgen und die nächste Klausur.</p></div>
+          <figure class="shot" style="aspect-ratio: 1080 / 1670" data-slot="heute" data-kind="product" data-alt="Heute-Seite"><img src="bilder/app/heute-crop.png" width="1080" height="1670" loading="lazy" alt="Heute-Seite: Mathematik läuft noch 41 Minuten mit Vertretung, als Nächstes Deutsch, Nachricht der Schule und Hausaufgaben bis morgen"></figure>
+        </div>
+        <div class="panel" role="tabpanel" id="p-raeume" aria-labelledby="t-raeume" hidden>
+          <div><h3>Welcher Raum gerade frei ist</h3><p>Aus allen Klassenplänen: die freien Räume jeder Stunde, bis wann sie frei sind und wer wo Unterricht hat.</p></div>
+          <figure class="shot" style="aspect-ratio: 1080 / 1620" data-slot="raeume" data-kind="product" data-alt="Freie Räume der Schule"><img src="bilder/app/schule-crop.png" width="1080" height="1620" loading="lazy" alt="Schule in der 3. Stunde: 5 von 8 Räumen frei, B205 frei bis 11:50, die anderen bis Schulschluss"></figure>
+        </div>
+        <div class="panel" role="tabpanel" id="p-info" aria-labelledby="t-info" hidden>
+          <div><h3>Klausuren, Hausaufgaben, Fehlzeiten</h3><p>Klausuren mit Countdown, Hausaufgaben zum Abhaken, dazu Sprechstunden und die Nachricht des Tages.</p></div>
+          <figure class="shot" style="aspect-ratio: 1080 / 1100" data-slot="info" data-kind="product" data-alt="Klausurenliste"><img src="bilder/app/klausuren-crop.png" width="1080" height="1100" loading="lazy" alt="Klausuren: Mathematik in 5 Tagen, Englisch in 12 Tagen, Biologie in 30 Tagen, jeweils mit Raum"></figure>
+        </div>
+        <div class="panel" role="tabpanel" id="p-voraus" aria-labelledby="t-voraus" hidden>
+          <div><h3>Die Woche, auch wenn die Schule nur morgen zeigt</h3><p>Fehlende Tage kommen blass aus einer früheren Woche, bis die Schule sie freigibt.</p></div>
+          <figure class="shot" style="aspect-ratio: 1080 / 1450" data-slot="voraus" data-kind="product" data-alt="Voraussichtliche Woche"><img src="bilder/app/vorschau-crop.png" width="1080" height="1450" loading="lazy" alt="Nächste Woche: Montag bis Mittwoch normal, Donnerstag und Freitag blass mit dem Hinweis voraussichtlich"></figure>
         </div>
       </div>
     </div>
@@ -137,7 +171,7 @@
         <div><dt>Entfall</dt><dd>Rot und durchgestrichen, im Raster wie in der Tagesliste.</dd></div>
         <div><dt>Vertretung und Raumänderung</dt><dd>Orange, der neue Name vorn, der alte durchgestrichen daneben.</dd></div>
         <div><dt>Klausur</dt><dd>Blau umrandet, mit der Art der Prüfung.</dd></div>
-        <div><dt>Meldung aufs Handy</dt><dd>Einmal pro Stunde prüft die App die nächsten 7 Tage. So sieht eine Meldung aus:<span class="sample">„Di. 17.11., 3. Std.: Ge entfällt“</span></dd></div>
+        <div><dt>Meldung aufs Handy</dt><dd>Einmal pro Stunde prüft die App diese und die nächste Woche. So sieht eine Meldung aus:<span class="sample">„Di. 17.11., 3. Std.: Ge entfällt“</span></dd></div>
       </dl>
     </div>
   </section>
@@ -163,7 +197,7 @@
       <dl class="spec">
         <div><dt>Android</dt><dd>8.0 oder neuer</dd></div>
         <div><dt>Google-Dienste</dt><dd>nicht nötig, auch GrapheneOS</dd></div>
-        <div><dt>Download</dt><dd>1,3&nbsp;MB</dd></div>
+        <div><dt>Download</dt><dd>1,4&nbsp;MB</dd></div>
         <div><dt>Verbindungen</dt><dd>WebUntis und GitHub</dd></div>
         <div><dt>Passwort</dt><dd>wird nie gespeichert</dd></div>
       </dl>
@@ -180,7 +214,7 @@
           <a class="link" href="https://github.com/BrickyStudios/stundenblick/releases"><span>Alle Versionen</span></a>
         </div>
       </div>
-      <figure class="shot" style="aspect-ratio: 1080 / 1125" data-slot="dunkel" data-kind="product" data-alt="Wochenansicht im Dunkelmodus"><img src="bilder/app/dark-crop.png" width="1080" height="1125" loading="lazy" alt="Wochenansicht im Dunkelmodus, Biologie und Physik ausgeblendet"></figure>
+      <figure class="shot" style="aspect-ratio: 1080 / 1218" data-slot="dunkel" data-kind="product" data-alt="Wochenansicht im Dunkelmodus"><img src="bilder/app/dark-crop.png" width="1080" height="1218" loading="lazy" alt="Wochenansicht im Dunkelmodus mit Entfall, Vertretung und Klausur"></figure>
     </div>
   </section>
 </main>
