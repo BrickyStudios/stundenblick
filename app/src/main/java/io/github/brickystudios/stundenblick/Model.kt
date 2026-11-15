@@ -177,6 +177,11 @@ object Parse {
         return Extra(d.optJSONObject("topic")?.optString("text").orEmpty(), hw, info)
     }
 
+    /** Start and end of the school year containing [day], from masterData.schoolyears; null outside every year. */
+    fun schoolYear(md: JSONObject, day: LocalDate): ClosedRange<LocalDate>? = md.optJSONArray("schoolyears").objects().mapNotNull {
+        runCatching { LocalDate.parse(it.getString("startDate"))..LocalDate.parse(it.getString("endDate")) }.getOrNull()
+    }.firstOrNull { day in it }
+
     /** The account's own timetable. Parents get their first child. Null when Untis names none (#503-like accounts). */
     fun own(userData: JSONObject): Element? {
         val type = userData.optString("elemType")

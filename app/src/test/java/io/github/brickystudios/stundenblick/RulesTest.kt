@@ -141,6 +141,26 @@ class RulesTest {
         assertTrue("single lessons keep the full width", placed.filter { it.period.start == monday.atTime(8, 0) }.all { it.lanes == 1 })
     }
 
+    @Test fun shapeNamesFieldsNeverValues() {
+        val r = JSONObject().put("type", "CLASS").put("id", 2781).put("exams", JSONArray()
+            .put(JSONObject().put("examType", "GEHEIMTYP").put("name", "Mathe-SECRET").put("teacherIds", JSONArray().put(358)))
+            .put(JSONObject().put("examType", "x")))
+        val (n, text) = Diag.shape(r)
+        assertEquals(2, n)
+        assertEquals("Felder: exams,id,type; exams[]: examType,name,teacherIds", text)
+        assertFalse(text.contains("SECRET") || text.contains("GEHEIM") || text.contains("2781") || text.contains("358"))
+        assertEquals("empty answer", 0 to "Felder: messages", Diag.shape(JSONObject().put("messages", JSONArray())))
+    }
+
+    @Test fun schoolYearContainsTheDay() {
+        val md = JSONObject().put("schoolyears", JSONArray()
+            .put(JSONObject().put("startDate", "2025-08-27").put("endDate", "2026-07-07"))
+            .put(JSONObject().put("startDate", "2026-08-26").put("endDate", "2027-07-06")))
+        assertEquals(LocalDate.of(2027, 7, 6), Parse.schoolYear(md, monday)!!.endInclusive)
+        assertNull("summer holidays", Parse.schoolYear(md, LocalDate.of(2026, 7, 20)))
+        assertNull("no data", Parse.schoolYear(JSONObject(), monday))
+    }
+
     @Test fun releaseVersionsCompare() {
         assertTrue(Releases.isNewer("v1.0.0", "0.9.0"))
         assertFalse(Releases.isNewer("v0.9.0", "0.9.0"))

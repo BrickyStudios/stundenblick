@@ -182,10 +182,33 @@ class Repo private constructor(ctx: Context) {
         val e = own.value
         val monday = Parse.monday(LocalDate.now())
         if (p.demo) return@withContext "Demo-Schule: es gibt keinen Server zu prüfen."
-        runCatching { Parse.own(userData(p).getJSONObject("userData")) }.fold(
-            { steps += Diag.Step("Benutzerdaten", true, if (it == null) "kein eigener Plan genannt" else "eigener Plan: ${it.kind.label}") },
+        val ud = runCatching { userData(p) }
+        ud.fold(
+            {
+                val own = Parse.own(it.getJSONObject("userData"))
+                val rights = it.optJSONObject("userData")?.optJSONArray("rights").strings().sorted().joinToString(",").ifBlank { "keine" }
+                steps += Diag.Step("Benutzerdaten", true, (if (own == null) "kein eigener Plan genannt" else "eigener Plan: ${own.kind.label}") + "; Rechte: $rights")
+            },
             { steps += Diag.Step("Benutzerdaten", false, Diag.detail(it)) },
         )
+        val today = LocalDate.now()
+        val year = ud.getOrNull()?.optJSONObject("masterData")?.let { Parse.schoolYear(it, today) }
+        val klasse = ud.getOrNull()?.optJSONObject("userData")?.optJSONArray("klassenIds")?.let { if (it.length() > 0) it.optLong(0) else null }
+            ?: e?.takeIf { it.kind == Kind.CLASS }?.id
+        // F6: count and field names per endpoint, never a value, so Jonas' test shows what his school hands out
+        fun probe(label: String, skip: String? = null, block: () -> JSONObject) {
+            if (skip != null) { steps += Diag.Step(label, false, skip); return }
+            runCatching(block).fold(
+                { val (n, fields) = Diag.shape(it); steps += Diag.Step(label, true, "$n ${if (n == 1) "Eintrag" else "Einträge"}; $fields") },
+                { steps += Diag.Step(label, false, Diag.detail(it)) },
+            )
+        }
+        val ownOrNull = if (e == null) "kein eigener Plan" else null
+        probe("Klausuren", ownOrNull) { Untis.exams(p, e!!.kind, e.id, today, year?.endInclusive?.takeIf { it > today } ?: today.plusDays(90)) }
+        probe("Hausaufgaben", if (p.anonymous) "ohne Anmeldung nicht abgefragt" else ownOrNull) { Untis.homework(p, e!!.kind, e.id, today.minusDays(7), today.plusDays(28)) }
+        probe("Nachricht des Tages") { Untis.messagesOfDay(p, today) }
+        probe("Sprechstunden", if (klasse == null) "keine Klasse" else null) { Untis.officeHours(p, klasse!!, today) }
+        probe("Fehlzeiten", if (p.anonymous) "ohne Anmeldung nicht abgefragt" else null) { Untis.absences(p, year?.start ?: today.minusDays(90), today) }
         var firstId: Long? = null
         if (e != null) runCatching { Parse.periods(timetable(p, e.kind, e.id, monday)) }.fold(
             { firstId = it.firstOrNull()?.id; steps += Diag.Step("Eigener Plan (JSON-RPC)", true, "${it.size} Stunden diese Woche") },

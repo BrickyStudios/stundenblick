@@ -1,6 +1,7 @@
 package io.github.brickystudios.stundenblick
 
 import org.json.JSONException
+import org.json.JSONObject
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -136,6 +137,15 @@ object Diag {
         appendLine("Stundenblick $appVersion · Android $android · ${if (anonymous) "ohne Anmeldung" else "mit Konto"}")
         steps.forEachIndexed { i, s -> appendLine("${i + 1}. ${s.label}: ${if (s.ok) "OK" else "Fehler"}${if (s.detail.isNotBlank()) " (${s.detail})" else ""}") }
     }.trimEnd()
+
+    /** Field names only, never values: the result's keys plus the keys of the first item of its first non-empty list. */
+    fun shape(o: JSONObject): Pair<Int, String> {
+        val top = o.keys().asSequence().sorted().toList()
+        val list = top.firstNotNullOfOrNull { k -> o.optJSONArray(k)?.takeIf { it.length() > 0 }?.let { k to it } }
+        val first = list?.second?.optJSONObject(0)
+        val inner = if (list != null && first != null) "; ${list.first}[]: " + first.keys().asSequence().sorted().joinToString(",") else ""
+        return (list?.second?.length() ?: 0) to "Felder: " + top.joinToString(",") + inner
+    }
 
     fun detail(e: Throwable): String = when (e) {
         is UntisException -> "Untis ${e.code}"

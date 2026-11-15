@@ -75,6 +75,24 @@ object Untis {
         JSONObject().put("ttIds", JSONArray(ids)).put("auth", auth(p)),
     ) as JSONObject
 
+    private fun range(p: Profile, from: LocalDate, to: LocalDate) =
+        JSONObject().put("startDate", from.toString()).put("endDate", to.toString()).put("auth", auth(p))
+
+    fun exams(p: Profile, kind: Kind, id: Long, from: LocalDate, to: LocalDate): JSONObject =
+        call(p.rpcUrl, "getExams2017", range(p, from, to).put("id", id).put("type", kind.name)) as JSONObject
+
+    fun homework(p: Profile, kind: Kind, id: Long, from: LocalDate, to: LocalDate): JSONObject =
+        call(p.rpcUrl, "getHomeWork2017", range(p, from, to).put("id", id).put("type", kind.name)) as JSONObject
+
+    fun messagesOfDay(p: Profile, day: LocalDate): JSONObject =
+        call(p.rpcUrl, "getMessagesOfDay2017", JSONObject().put("date", day.toString()).put("auth", auth(p))) as JSONObject
+
+    fun officeHours(p: Profile, klasseId: Long, from: LocalDate): JSONObject =
+        call(p.rpcUrl, "getOfficeHours2017", JSONObject().put("klasseId", klasseId).put("startDate", from.toString()).put("auth", auth(p))) as JSONObject
+
+    fun absences(p: Profile, from: LocalDate, to: LocalDate): JSONObject =
+        call(p.rpcUrl, "getStudentAbsences2017", range(p, from, to).put("includeExcused", true).put("includeUnExcused", true)) as JSONObject
+
     fun authToken(p: Profile): String =
         (call(p.rpcUrl, "getAuthToken", JSONObject().put("auth", auth(p))) as JSONObject).getString("token")
 
