@@ -58,6 +58,8 @@ data class Period(
     val color: String? = null,
     /** the period ids a double-lesson block stands for (empty: just [id]) */
     val parts: List<Long> = emptyList(),
+    /** not from Untis: the school does not show this day yet, so Derive.project filled it from an earlier week */
+    val projected: Boolean = false,
 ) {
     val ids get() = parts.ifEmpty { listOf(id) }
     val cancelled get() = "CANCELLED" in states

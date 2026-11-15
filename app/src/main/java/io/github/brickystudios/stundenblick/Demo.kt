@@ -84,6 +84,7 @@ object Demo {
             }
             if (!match) return@forEachIndexed
             val day = monday.plusDays(d - 1)
+            if (day.isAfter(LocalDate.now().plusDays(7))) return@forEachIndexed // like schools that show only the next days
             val (a, b) = times[(u - 1).toInt()]
             var teacher = t to t
             var room = r to r
@@ -112,7 +113,7 @@ object Demo {
             )
         }
         // an extra lesson on Monday afternoon for Q2
-        if ((kind == Kind.CLASS && id == 3L) || (kind == Kind.TEACHER && id == 12L)) {
+        if (((kind == Kind.CLASS && id == 3L) || (kind == Kind.TEACHER && id == 12L)) && !monday.isAfter(LocalDate.now().plusDays(7))) {
             val (a, b) = times[6]
             periods.put(
                 JSONObject().put("id", monday.toEpochDay() * 10_000 + 9_999).put("lessonId", 999)

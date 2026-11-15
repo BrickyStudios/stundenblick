@@ -127,4 +127,27 @@ class DeriveTest {
         assertEquals(l.size, l.map { it.id }.toSet().size)
         assertTrue(l.size >= 3)
     }
+
+    @Test fun projectFillsTheDaysTheSchoolDoesNotShowYet() {
+        val shown = q2.filter { it.start.toLocalDate() <= monday.plusDays(1) } // the school shows Monday and Tuesday
+        val last = Parse.periods(Demo.timetable(Kind.CLASS, 3, monday.minusWeeks(1)))
+        val added = Derive.project(shown, monday, listOf(1L to last), monday, master).filter { it.projected }
+        assertEquals(setOf(2L, 3L, 4L), added.map { java.time.temporal.ChronoUnit.DAYS.between(monday, it.start.toLocalDate()) }.toSet())
+        assertTrue("regular plan only", added.none { it.special || it.refs.any { r -> r.changed } })
+        assertTrue(added.all { it.id < 0 })
+        // last week's Friday exam sits in the course's normal slot: it shows as that lesson
+        assertEquals(last.count { it.start.toLocalDate() == monday.minusWeeks(1).plusDays(4) && !it.additional }, added.count { it.start.toLocalDate() == monday.plusDays(4) })
+        // a substitute last week goes back to the regular teacher
+        last.filter { it.start.toLocalDate() == monday.minusWeeks(1).plusDays(2) && !it.isExam && !it.additional }
+            .flatMap { it.refs }.filter { it.changed }.forEach { r ->
+                assertTrue(added.any { p -> p.refs.any { it.kind == r.kind && it.id == r.orgId } })
+            }
+        // the school shows the whole week: nothing to fill; today and earlier never get filled
+        assertEquals(q2.size, Derive.project(q2, monday, listOf(1L to last), monday, master).size)
+        assertEquals(0, Derive.project(emptyList(), monday, listOf(1L to last), monday.plusDays(4), master).size)
+        // last week empty (holidays): two weeks back
+        val two = Derive.project(shown, monday, listOf(1L to emptyList(), 2L to Parse.periods(Demo.timetable(Kind.CLASS, 3, monday.minusWeeks(2)))), monday, master)
+        assertEquals(added.size, two.count { it.projected })
+        assertTrue(two.filter { it.projected }.all { it.start.toLocalDate() > monday.plusDays(1) })
+    }
 }

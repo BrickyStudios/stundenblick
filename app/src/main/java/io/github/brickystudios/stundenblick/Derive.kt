@@ -161,5 +161,37 @@ object Derive {
     /** every lesson in [unit], once (a lesson of several classes appears in each class plan) */
     fun lessonsAt(all: List<Period>, day: LocalDate, unit: Slot): List<Period> =
         all.filter { it.start.toLocalDate() == day && overlaps(it, unit) }.distinctBy { it.id }
-}
 
+    // ---- schools that show only today and tomorrow: the rest of the week, as it will probably be
+
+    /** school days of the week after [today] and after the last day the school shows: the days a projection fills */
+    fun openDays(week: List<Period>, monday: LocalDate, today: LocalDate, master: Master?): List<LocalDate> {
+        val shownUntil = week.maxOfOrNull { it.start.toLocalDate() }
+        return (0..5L).map { monday.plusDays(it) }
+            .filter { d -> d.isAfter(today) && (shownUntil == null || d.isAfter(shownUntil)) && master?.holiday(d) == null }
+    }
+
+    /**
+     * Fills each open day with the same weekday of the nearest earlier week that has lessons on it ([earlier]: weeks back to
+     * periods, nearest first), as the regular plan: a cancelled lesson or an exam counts as the normal lesson, a substitute or
+     * room swap goes back to the original, extra and moved lessons are left out.
+     * shortcut: A/B-week schools get the nearest week's pattern; compare two weeks back once such a school reports it.
+     */
+    fun project(week: List<Period>, monday: LocalDate, earlier: List<Pair<Long, List<Period>?>>, today: LocalDate, master: Master?): List<Period> {
+        val add = openDays(week, monday, today, master).flatMap { d ->
+            earlier.firstNotNullOfOrNull { (back, ps) ->
+                ps?.filter { it.start.toLocalDate() == d.minusWeeks(back) }?.takeIf { it.isNotEmpty() }?.let { back to it }
+            }?.let { (back, src) -> src.mapNotNull { regular(it, back) } }.orEmpty()
+        }
+        return if (add.isEmpty()) week else week + add
+    }
+
+    private fun regular(p: Period, weeks: Long): Period? {
+        if (p.additional || ("IRREGULAR" in p.states && p.refs.none { it.changed })) return null
+        return p.copy(
+            id = -p.id, start = p.start.plusWeeks(weeks), end = p.end.plusWeeks(weeks),
+            refs = p.refs.map { if (it.changed) Ref(it.kind, it.orgId, 0) else it },
+            states = setOf("REGULAR"), substText = "", info = "", exam = null, parts = emptyList(), projected = true,
+        )
+    }
+}

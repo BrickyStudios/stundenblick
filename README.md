@@ -38,6 +38,7 @@
 - **Jeder freigegebene Plan:** eigene Klasse, andere Klassen, Lehrkräfte, Räume, Fächer, mit Suche und Favoriten. Über fremden Plänen steht, wo die Lehrkraft oder Klasse gerade ist. Namen in den Details öffnen deren Plan.
 - **Änderungen auf einen Blick:** Entfall rot und durchgestrichen, Vertretung und Raumänderung orange mit dem alten Namen daneben, Klausur blau, Zusatzstunde hellblau, neue Änderungen mit Punkt markiert.
 - **Woche oder Tag:** Wochenraster mit Doppelstunden als Block, Jetzt-Linie und Kursnamen; Tagesliste mit Pausen und Freistunden.
+- **Die ganze Woche, auch wenn die Schule nur morgen zeigt:** Tage, die Untis noch nicht freigibt, füllt die App blass mit dem normalen Plan aus einer früheren Woche, ohne Ausfälle und Vertretungen. Sobald die Schule den Tag freigibt, stehen dort die echten Stunden.
 - **Schule auf einen Blick:** alle freien Räume einer Stunde, bis wann sie frei sind und ob sie durch Entfall frei wurden, dazu wer wo Unterricht hat, durchsuchbar nach Klasse, Kurs, Lehrkraft oder Raum. Gibt die Schule Raum- oder Lehrkraftpläne nicht frei, setzt die App sie aus den Klassenplänen zusammen.
 - **Raumfinder** wie bei BetterUntis: einzelne Räume wählen und sehen, ob sie jetzt frei sind und bis wann.
 - **Info Center** wie bei BetterUntis: Klausuren, Hausaufgaben zum Abhaken, Nachricht des Tages, Sprechstunden mit Mail und Telefon, eigene Fehlzeiten. Was die Schule nicht freigibt, taucht nicht auf.

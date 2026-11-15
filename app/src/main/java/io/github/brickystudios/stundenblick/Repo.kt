@@ -184,6 +184,37 @@ class Repo private constructor(ctx: Context) {
         }
     }
 
+    // ---- schools that show only the next day: the rest of the week from earlier weeks (Derive.project)
+
+    /** up to 3 earlier weeks that have begun and are not all holidays, nearest first */
+    private fun sourceWeeks(monday: LocalDate): List<LocalDate> {
+        val thisMonday = Parse.monday(LocalDate.now().plusDays(1)) // on Sunday the coming week has begun for this purpose
+        val m = master.value
+        return (1..10L).map { monday.minusWeeks(it) }
+            .filter { w -> !w.isAfter(thisMonday) && (0..4L).any { d -> m?.holiday(w.plusDays(d)) == null } }.take(3)
+    }
+
+    /** the week as the plan shows it: what the school hands out, plus the days it does not show yet, marked projected */
+    fun shown(e: Element, monday: LocalDate): Week? {
+        val w = weeks[weekKey(e, monday)] ?: return null
+        val base = w.periods ?: if (w.error != null) emptyList() else return w
+        val earlier = sourceWeeks(monday).map { m -> java.time.temporal.ChronoUnit.WEEKS.between(m, monday) to weeks[weekKey(e, m)]?.periods }
+        val ps = Derive.project(base, monday, earlier, LocalDate.now(), master.value)
+        return if (ps.size == base.size) w else w.copy(periods = ps)
+    }
+
+    /** loads what [shown] draws from, only for a week with open days; a past week fetched before it ended is fetched once more */
+    suspend fun loadSources(e: Element, monday: LocalDate) {
+        val w = weeks[weekKey(e, monday)] ?: return
+        if (w.loading || Derive.openDays(w.periods.orEmpty(), monday, LocalDate.now(), master.value).isEmpty()) return
+        for (m in sourceWeeks(monday)) {
+            load(e, m, maxAgeMs = 7 * 86_400_000L)
+            val ended = m.plusDays(5).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val fetched = weeks[weekKey(e, m)]?.fetchedAt ?: 0
+            if (fetched < ended && System.currentTimeMillis() > ended) load(e, m, force = true)
+        }
+    }
+
     /** K4: topic, homework and extra text; a double-lesson block asks for all its periods and merges them */
     suspend fun extra(period: Period): Result<Parse.Extra?> = withContext(Dispatchers.IO) {
         val p = profile.value ?: return@withContext Result.success(null)

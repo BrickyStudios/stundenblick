@@ -63,6 +63,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
@@ -137,7 +138,7 @@ fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings
     fun dayOf(page: Int): LocalDate = base.plusWeeks((page / 5 - CENTER).toLong()).plusDays((page % 5).toLong())
 
     val shownMonday = if (weekView) mondayOf(weekPager.currentPage) else Parse.monday(dayOf(dayPager.currentPage))
-    val week = repo.weeks[repo.weekKey(element, shownMonday)]
+    val week = repo.shown(element, shownMonday)
     val subtitle = if (weekView) {
         "KW ${shownMonday.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)} · ${dm.format(shownMonday)}–${dm.format(shownMonday.plusDays(4))}"
     } else dayLong.format(dayOf(dayPager.currentPage))
@@ -173,6 +174,7 @@ fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings
             week?.periods?.let { ps ->
                 val c = Derive.weekCount(Derive.blocks(Filter.apply(ps, hidden)))
                 if (c.any) Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) { WeekLine(c) }
+                ProjectedLine(ps.filter { it.projected }.map { it.start.toLocalDate() }.distinct().sorted(), weekView, if (weekView) null else dayOf(dayPager.currentPage))
             }
             PullToRefreshBox(
                 isRefreshing = week?.loading == true && week.periods != null,
@@ -182,19 +184,19 @@ fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings
                 if (weekView) {
                     HorizontalPager(weekPager, beyondViewportPageCount = 1) { page ->
                         val monday = mondayOf(page)
-                        LaunchedEffect(element.key, monday) { repo.load(element, monday) }
-                        val w = repo.weeks[repo.weekKey(element, monday)]
+                        LaunchedEffect(element.key, monday) { repo.load(element, monday); repo.loadSources(element, monday) }
+                        val w = repo.shown(element, monday)
                         // E11: the dot stays for this visit; the week counts as seen once it is the current page
                         val fresh = remember(element.key, monday) { if (isOwn) repo.unseen() else emptySet() }
-                        if (isOwn && weekPager.currentPage == page) LaunchedEffect(w?.periods) { w?.periods?.let { ps -> repo.markSeen(ps.map { it.id }) } }
+                        if (isOwn && weekPager.currentPage == page) LaunchedEffect(w?.periods) { w?.periods?.let { ps -> repo.markSeen(ps.filter { !it.projected }.map { it.id }) } }
                         WeekPage(w, master, monday, today, now, hidden, fresh, hide) { detail = it }
                     }
                 } else {
                     HorizontalPager(dayPager, beyondViewportPageCount = 1) { page ->
                         val day = dayOf(page)
                         val monday = Parse.monday(day)
-                        LaunchedEffect(element.key, monday) { repo.load(element, monday) }
-                        val w = repo.weeks[repo.weekKey(element, monday)]
+                        LaunchedEffect(element.key, monday) { repo.load(element, monday); repo.loadSources(element, monday) }
+                        val w = repo.shown(element, monday)
                         val fresh = remember(element.key, monday) { if (isOwn) repo.unseen() else emptySet() }
                         if (isOwn && dayPager.currentPage == page) LaunchedEffect(w?.periods, day) {
                             w?.periods?.let { ps -> repo.markSeen(ps.filter { it.start.toLocalDate() == day }.map { it.id }) }
@@ -206,6 +208,19 @@ fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings
         }
     }
     detail?.let { DetailSheet(repo, it, master, onOpen = { e -> detail = null; onOpen(e) }) { detail = null } }
+}
+
+/** which days of the week are projected, in one line above the plan */
+@Composable
+private fun ProjectedLine(days: List<LocalDate>, weekView: Boolean, day: LocalDate?) {
+    if (days.isEmpty() || (!weekView && day !in days)) return
+    val names = days.joinToString(", ") { it.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, de).removeSuffix(".") }
+    Text(
+        (if (weekView) "$names: voraussichtlich" else "Voraussichtlich") + ", aus einer früheren Woche. Die Schule zeigt " +
+            (if (weekView && days.size > 1) "diese Tage" else "den Tag") + " noch nicht, Ausfälle und Vertretungen fehlen.",
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)).padding(horizontal = 16.dp, vertical = 8.dp),
+        color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp,
+    )
 }
 
 @Composable
@@ -326,11 +341,11 @@ private fun Cell(p: Period, master: Master?, wide: Boolean, isNew: Boolean, onHi
     val teacher = p.of(Kind.TEACHER).joinToString(",") { master.name(it) }
     val tags = tagsFor(p).joinToString(", ") { it.first }
     Row(
-        Modifier.fillMaxSize().clip(shape)
+        Modifier.fillMaxSize().alpha(if (p.projected) 0.5f else 1f).clip(shape)
             .background(if (p.cancelled) s.cancelled.copy(alpha = 0.07f) else MaterialTheme.colorScheme.surface)
             .border(if (accent != null) 1.5.dp else 0.5.dp, accent ?: MaterialTheme.colorScheme.outlineVariant, shape)
             .combinedClickable(onClick = { onTap(p) }, onLongClick = { onHide(p) }, onLongClickLabel = "Fach ausblenden")
-            .semantics { contentDescription = "$subject ${hm.format(p.start)}, Raum $room, $teacher. $tags" + if (isNew) ", neu" else "" },
+            .semantics { contentDescription = "$subject ${hm.format(p.start)}, Raum $room, $teacher. $tags" + (if (isNew) ", neu" else "") + if (p.projected) ", voraussichtlich" else "" },
     ) {
         Box(Modifier.width(3.dp).fillMaxHeight().background(if (p.cancelled) s.cancelled.copy(alpha = 0.4f) else stripe))
         Column(Modifier.weight(1f).padding(horizontal = 3.dp, vertical = 2.dp)) {
@@ -377,7 +392,7 @@ private fun PeriodRow(p: Period, master: Master?, element: Element, isNew: Boole
     val accent = accentOf(p)
     val shape = RoundedCornerShape(12.dp)
     Row(
-        Modifier.fillMaxWidth().clip(shape).background(MaterialTheme.colorScheme.surface)
+        Modifier.fillMaxWidth().alpha(if (p.projected) 0.55f else 1f).clip(shape).background(MaterialTheme.colorScheme.surface)
             .border(if (accent != null) 1.5.dp else 0.5.dp, accent ?: MaterialTheme.colorScheme.outlineVariant, shape)
             .combinedClickable(onClick = { onTap(p) }, onLongClick = { onHide(p) }, onLongClickLabel = "Fach ausblenden").padding(12.dp),
     ) {
@@ -431,7 +446,7 @@ private fun RefLine(p: Period, kind: Kind, master: Master?, onOpen: ((Element) -
 @Composable
 private fun DetailSheet(repo: Repo, p: Period, master: Master?, onOpen: (Element) -> Unit, onDismiss: () -> Unit) {
     val s = LocalSignals.current
-    val extra by produceState<Result<Parse.Extra?>?>(null, p.id) { value = repo.extra(p) }
+    val extra by produceState<Result<Parse.Extra?>?>(null, p.id) { value = if (p.projected) Result.success(null) else repo.extra(p) }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(master.subject(p, long = true), fontSize = 22.sp, fontWeight = FontWeight.SemiBold,
@@ -440,6 +455,8 @@ private fun DetailSheet(repo: Repo, p: Period, master: Master?, onOpen: (Element
             Text(n + dayLong.format(p.start) + " · " + hm.format(p.start) + "–" + hm.format(p.end), color = s.muted, fontSize = 14.sp)
             val tags = tagsFor(p)
             if (tags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) { tags.forEach { (t, c) -> Tag(t, c) } }
+            if (p.projected) Text("Voraussichtlich: so lag die Stunde in einer früheren Woche. Deine Schule zeigt diesen Tag noch nicht, Ausfälle und Vertretungen fehlen also noch.",
+                fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             HorizontalDivider(color = s.line)
             RefLine(p, Kind.TEACHER, master, onOpen)
             RefLine(p, Kind.ROOM, master, onOpen)
