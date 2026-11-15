@@ -6,11 +6,11 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
-    <color name="paper">#F5F4F0</color>
-    <color name="ink">#14161D</color>
-    <color name="blue">#4352E0</color>
-    <color name="widget_text">#1B1D24</color>
-    <color name="widget_muted">#6B6F7B</color>
-    <color name="widget_bg">#F7F6F2</color>
+    <color name="paper">#ECE4D0</color>
+    <color name="ink">#15100E</color>
+    <color name="icon_bg">#15100E</color>
+    <color name="widget_text">#15100E</color>
+    <color name="widget_muted">#584E45</color>
+    <color name="widget_bg">#F4EEE0</color>
     <string name="widget_description">Heutige Stunden mit Ausfällen und Vertretungen</string>
 </resources>

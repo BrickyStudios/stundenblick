@@ -17,8 +17,8 @@ enum class Kind(val label: String) { CLASS("Klasse"), TEACHER("Lehrkraft"), SUBJ
 
 data class Element(val kind: Kind, val id: Long, val name: String, val longName: String = name, val color: String? = null) {
     val key get() = "${kind.name}:$id"
-    /** "M" plus "Mathematik" reads better than "M" twice */
-    val title get() = if (longName.isBlank() || longName == name) name else "$name · $longName"
+    /** "M (Mathematik)" reads better than "M" twice */
+    val title get() = if (longName.isBlank() || longName == name) name else "$name ($longName)"
 
     companion object {
         fun fromKey(key: String, name: String): Element? {

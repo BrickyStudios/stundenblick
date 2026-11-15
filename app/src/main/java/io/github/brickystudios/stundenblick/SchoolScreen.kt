@@ -40,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
@@ -92,7 +93,7 @@ fun SchoolScreen(repo: Repo, onOpen: (Element) -> Unit, onRooms: () -> Unit) {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Schule", fontWeight = FontWeight.SemiBold)
+                        Text("SCHULE")
                         Text(dayName.format(day), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
@@ -112,13 +113,13 @@ fun SchoolScreen(repo: Repo, onOpen: (Element) -> Unit, onRooms: () -> Unit) {
                 st.refused -> Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Deine Schule gibt die Pläne anderer Klassen für dein Konto nicht frei. Ohne sie kann Stundenblick nicht sehen, welche Räume frei sind.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    OutlinedButton(onClick = onRooms) { Text("Raumfinder mit einzelnen Räumen") }
+                    OutlinedButton(shape = RectangleShape, onClick = onRooms) { Text("Raumfinder mit einzelnen Räumen") }
                 }
                 all == null -> Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Freie Räume und wer wo Unterricht hat, für die ganze Schule.", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     Text("Dafür lädt Stundenblick die Wochenpläne aller $classes Klassen, eine Anfrage pro Klasse. Danach bleiben sie 6 Stunden gespeichert, auch offline.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (!st.running) Button(onClick = { scope.launch { repo.loadSchool(monday) } }) { Text("Klassenpläne laden") }
+                    if (!st.running) Button(shape = RectangleShape, onClick = { scope.launch { repo.loadSchool(monday) } }) { Text("Klassenpläne laden") }
                 }
                 else -> {
                     if (!st.running && loaded < classes) Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {

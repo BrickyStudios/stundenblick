@@ -105,7 +105,7 @@ class DayWidget : AppWidgetProvider() {
                 0L -> "Heute"
                 1L -> "Morgen"
                 else -> dayName.format(target).substringBefore(',')
-            } + " · " + dayName.format(target).substringAfter(", ")
+            } + ", " + dayName.format(target).substringAfter(", ")
             val ps = day(target) ?: return title to "Öffne Stundenblick, um den nächsten Schultag zu laden."
             val lines = ps.map { p ->
                 val n = Derive.unitLabel(p, master)?.removeSuffix(" Std.") ?: clock.format(p.start)

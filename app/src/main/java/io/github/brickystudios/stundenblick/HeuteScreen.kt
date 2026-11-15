@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +33,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -67,9 +67,9 @@ fun HeuteScreen(repo: Repo, onOpenPlan: () -> Unit, onHistory: () -> Unit, onSet
     if (own == null) {
         Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Spacer(Modifier.height(24.dp))
-            Text("Heute", fontSize = 30.sp, fontWeight = FontWeight.SemiBold)
+            PosterTitle("Heute")
             Text("Für die Heute-Seite braucht Stundenblick deinen eigenen Plan.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Button(onClick = onSetOwn) { Text("Klasse als eigenen Plan setzen") }
+            Button(shape = RectangleShape, onClick = onSetOwn) { Text("Klasse als eigenen Plan setzen") }
         }
         return
     }
@@ -116,7 +116,7 @@ fun HeuteScreen(repo: Repo, onOpenPlan: () -> Unit, onHistory: () -> Unit, onSet
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).safeDrawingPadding().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(longDay.format(today), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp))
+            PosterTitle(longDay.format(today), Modifier.padding(top = 8.dp))
             if (error != null) Text(error, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             when {
@@ -197,14 +197,14 @@ fun HeuteScreen(repo: Repo, onOpenPlan: () -> Unit, onHistory: () -> Unit, onSet
 @Composable
 private fun Card(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Column(
-        modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-            .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp)).padding(16.dp),
+        modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RectangleShape)
+            .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant, RectangleShape).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) { content() }
 }
 
 @Composable
-private fun Label(text: String) = Text(text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+private fun Label(text: String) = Text(text, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = LocalSignals.current.muted)
 
 /** One lesson: number, subject, room and teacher, changes in their colour. */
 @OptIn(ExperimentalLayoutApi::class)

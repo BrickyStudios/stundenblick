@@ -68,7 +68,7 @@ fun PickerScreen(repo: Repo, ownMode: Boolean, onBack: () -> Unit, onPick: (Elem
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (ownMode) "Deine Klasse wählen" else "Plan wählen", fontWeight = FontWeight.SemiBold) },
+                title = { Text((if (ownMode) "Deine Klasse wählen" else "Plan wählen").uppercase()) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück") } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )

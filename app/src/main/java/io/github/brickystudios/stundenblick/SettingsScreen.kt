@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -44,6 +43,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -75,7 +75,7 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Einstellungen", fontWeight = FontWeight.SemiBold) },
+                title = { Text("EINSTELLUNGEN") },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück") } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -94,7 +94,7 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp,
                 )
-                OutlinedButton(onClick = { repo.logout(); ChangeJob.schedule(ctx, false); DayWidget.update(ctx); onLoggedOut() }) { Text("Abmelden und alles löschen") }
+                OutlinedButton(shape = RectangleShape, onClick = { repo.logout(); ChangeJob.schedule(ctx, false); DayWidget.update(ctx); onLoggedOut() }) { Text("Abmelden und alles löschen") }
             }
 
             Section("Mein Plan") {
@@ -159,7 +159,7 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
             Section("Verbindungstest") {
                 Text("Prüft Schritt für Schritt, was Untis für dein Konto liefert. Das Ergebnis enthält keinen Namen, kein Passwort und keinen Schlüssel, du kannst es in ein GitHub-Issue kopieren.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-                Button(onClick = { testing = true; scope.launch { diag = repo.connectionTest(); testing = false } }, enabled = !testing) {
+                Button(shape = RectangleShape, onClick = { testing = true; scope.launch { diag = repo.connectionTest(); testing = false } }, enabled = !testing) {
                     Text(if (testing) "Prüfe …" else "Verbindung testen")
                 }
                 diag?.let { text ->
@@ -184,7 +184,7 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
 @Composable
 private fun Section(title: String, content: @Composable () -> Unit) {
     Column(
-        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp)).padding(16.dp),
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RectangleShape).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)

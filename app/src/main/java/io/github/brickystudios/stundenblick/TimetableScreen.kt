@@ -28,8 +28,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -63,6 +61,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -140,7 +139,7 @@ fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings
     val shownMonday = if (weekView) mondayOf(weekPager.currentPage) else Parse.monday(dayOf(dayPager.currentPage))
     val week = repo.shown(element, shownMonday)
     val subtitle = if (weekView) {
-        "KW ${shownMonday.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)} · ${dm.format(shownMonday)}–${dm.format(shownMonday.plusDays(4))}"
+        "KW ${shownMonday.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)}, ${dm.format(shownMonday)}–${dm.format(shownMonday.plusDays(4))}"
     } else dayLong.format(dayOf(dayPager.currentPage))
 
     Scaffold(
@@ -148,7 +147,7 @@ fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings
             TopAppBar(
                 title = {
                     Column(Modifier.clickable(onClick = onPick)) {
-                        Text(if (element.name == "Mein Plan") "Mein Plan" else element.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(element.name.uppercase(), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                     }
                 },
@@ -266,7 +265,7 @@ private fun WeekPage(week: Week?, master: Master?, monday: LocalDate, today: Loc
                     Text(d.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, de).removeSuffix("."), fontSize = 12.sp,
                         color = if (isToday) MaterialTheme.colorScheme.primary else s.muted, fontWeight = FontWeight.Medium)
                     Box(
-                        Modifier.size(26.dp).background(if (isToday) MaterialTheme.colorScheme.primary else Color.Transparent, CircleShape),
+                        Modifier.size(26.dp).background(if (isToday) MaterialTheme.colorScheme.primary else Color.Transparent, RectangleShape),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text("${d.dayOfMonth}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
@@ -291,7 +290,7 @@ private fun WeekPage(week: Week?, master: Master?, monday: LocalDate, today: Loc
                         val w = maxWidth
                         units.forEach { u ->
                             Box(Modifier.offset(y = y(u.start)).fillMaxWidth().height(minuteHeight * ((u.end.toSecondOfDay() - u.start.toSecondOfDay()) / 60))
-                                .padding(1.dp).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), RoundedCornerShape(6.dp)))
+                                .padding(1.dp).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), RectangleShape))
                         }
                         val dayPeriods = periods.filter { it.start.toLocalDate() == d }
                         if (dayPeriods.isEmpty()) master?.holiday(d)?.let { name ->
@@ -308,7 +307,7 @@ private fun WeekPage(week: Week?, master: Master?, monday: LocalDate, today: Loc
                         }
                         if (d == today && now.toLocalTime() > first && now.toLocalTime() < last) {
                             Box(Modifier.offset(y = y(now.toLocalTime()) - 1.dp).fillMaxWidth().height(2.dp).background(s.now))
-                            Box(Modifier.offset(x = (-3).dp, y = y(now.toLocalTime()) - 4.dp).size(8.dp).background(s.now, CircleShape))
+                            Box(Modifier.offset(x = (-3).dp, y = y(now.toLocalTime()) - 4.dp).size(8.dp).background(s.now, RectangleShape))
                         }
                     }
                 }
@@ -335,7 +334,7 @@ private fun Cell(p: Period, master: Master?, wide: Boolean, isNew: Boolean, onHi
     val s = LocalSignals.current
     val accent = accentOf(p)
     val stripe = master.subjectColor(p) ?: MaterialTheme.colorScheme.outline
-    val shape = RoundedCornerShape(7.dp)
+    val shape = RectangleShape
     val subject = master.subject(p)
     val room = p.of(Kind.ROOM).joinToString(",") { master.name(it) }
     val teacher = p.of(Kind.TEACHER).joinToString(",") { master.name(it) }
@@ -363,7 +362,7 @@ private fun Cell(p: Period, master: Master?, wide: Boolean, isNew: Boolean, onHi
             if (wide && course != null && p.end.toLocalTime().toSecondOfDay() - p.start.toLocalTime().toSecondOfDay() >= 56 * 60)
                 Text(course, fontSize = 9.sp, lineHeight = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = s.muted)
         }
-        if (isNew) Box(Modifier.padding(3.dp).size(7.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+        if (isNew) Box(Modifier.padding(3.dp).size(7.dp).background(MaterialTheme.colorScheme.primary, RectangleShape))
     }
 }
 
@@ -390,7 +389,7 @@ private fun DayPage(week: Week?, master: Master?, day: LocalDate, element: Eleme
 private fun PeriodRow(p: Period, master: Master?, element: Element, isNew: Boolean, onHide: (Period) -> Unit, onTap: (Period) -> Unit) {
     val s = LocalSignals.current
     val accent = accentOf(p)
-    val shape = RoundedCornerShape(12.dp)
+    val shape = RectangleShape
     Row(
         Modifier.fillMaxWidth().alpha(if (p.projected) 0.55f else 1f).clip(shape).background(MaterialTheme.colorScheme.surface)
             .border(if (accent != null) 1.5.dp else 0.5.dp, accent ?: MaterialTheme.colorScheme.outlineVariant, shape)
@@ -402,7 +401,7 @@ private fun PeriodRow(p: Period, master: Master?, element: Element, isNew: Boole
             Text(hm.format(p.start), fontSize = 12.sp, color = s.muted)
             Text(hm.format(p.end), fontSize = 12.sp, color = s.muted)
         }
-        Box(Modifier.width(3.dp).height(44.dp).background(master.subjectColor(p) ?: MaterialTheme.colorScheme.outline, RoundedCornerShape(2.dp)))
+        Box(Modifier.width(3.dp).height(44.dp).background(master.subjectColor(p) ?: MaterialTheme.colorScheme.outline, RectangleShape))
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(master.subject(p, long = true), fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
@@ -452,7 +451,7 @@ private fun DetailSheet(repo: Repo, p: Period, master: Master?, onOpen: (Element
             Text(master.subject(p, long = true), fontSize = 22.sp, fontWeight = FontWeight.SemiBold,
                 textDecoration = if (p.cancelled) TextDecoration.LineThrough else null)
             val n = master?.let { Derive.unitLabel(p, it) }?.let { "$it, " }.orEmpty()
-            Text(n + dayLong.format(p.start) + " · " + hm.format(p.start) + "–" + hm.format(p.end), color = s.muted, fontSize = 14.sp)
+            Text(n + dayLong.format(p.start) + ", " + hm.format(p.start) + "–" + hm.format(p.end), color = s.muted, fontSize = 14.sp)
             val tags = tagsFor(p)
             if (tags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) { tags.forEach { (t, c) -> Tag(t, c) } }
             if (p.projected) Text("Voraussichtlich: so lag die Stunde in einer früheren Woche. Deine Schule zeigt diesen Tag noch nicht, Ausfälle und Vertretungen fehlen also noch.",

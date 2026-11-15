@@ -33,7 +33,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -58,6 +57,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -151,6 +153,7 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
         Screen.TABS -> Scaffold(
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
+                Column { HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.onSurface)
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     listOf(Triple("heute", "Heute", Icons.Default.Home), Triple("plan", "Plan", Icons.Default.DateRange), Triple("schule", "Schule", Icons.Default.LocationOn), Triple("mehr", "Mehr", Icons.Default.Menu))
                         .forEach { (id, label, icon) ->
@@ -158,10 +161,12 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
                             NavigationBarItem(
                                 selected = tab == id, onClick = { tab = id },
                                 icon = { if (count > 0) BadgedBox(badge = { Badge { Text("$count") } }) { Icon(icon, null) } else Icon(icon, null) },
-                                label = { Text(label) },
+                                label = { Text(label, fontWeight = if (tab == id) FontWeight.Bold else FontWeight.Normal) },
+                                // the M3 indicator is a pill; the bill marks the current tab by ink and weight alone
+                                colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent),
                             )
                         }
-                }
+                } }
             },
             containerColor = MaterialTheme.colorScheme.background,
         ) { pad ->
@@ -191,7 +196,7 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
                     if (u.failed) Text("Download fehlgeschlagen. Versuch es noch einmal.", color = MaterialTheme.colorScheme.error)
                 }
             },
-            confirmButton = { Button(onClick = { scope.launch { Updater.install(ctx) } }, enabled = u.progress == null) { Text("Installieren") } },
+            confirmButton = { Button(shape = RectangleShape, onClick = { scope.launch { Updater.install(ctx) } }, enabled = u.progress == null) { Text("Installieren") } },
             dismissButton = { TextButton(onClick = { Updater.later() }) { Text("Später") } },
         )
     }
@@ -202,14 +207,14 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
 private fun OwnMissing(profile: Profile, onSetOwn: () -> Unit, onPick: () -> Unit, onSettings: () -> Unit) {
     Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Spacer(Modifier.height(24.dp))
-        Text("Kein eigener Plan", fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
+        PosterTitle("Kein eigener Plan")
         Text(
             if (profile.anonymous) "Ohne Anmeldung kennt Untis dich nicht. Wähl deine Klasse, dann ist sie dein Plan."
             else "Untis liefert für dein Konto keinen eigenen Stundenplan. Das passiert bei manchen Schulen und Eltern-Konten. Wähl deine Klasse als eigenen Plan.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Button(onClick = onSetOwn) { Text("Klasse als eigenen Plan setzen") }
-        OutlinedButton(onClick = onPick) { Text("Anderen Plan ansehen") }
+        Button(shape = RectangleShape, onClick = onSetOwn) { Text("Klasse als eigenen Plan setzen") }
+        OutlinedButton(shape = RectangleShape, onClick = onPick) { Text("Anderen Plan ansehen") }
         TextButton(onClick = onSettings) { Text("Einstellungen und Verbindungstest") }
     }
 }
@@ -229,7 +234,7 @@ private fun LinkConfirm(repo: Repo, l: SetSchool, onDone: () -> Unit) {
         }
         if (repo.profile.value != null) Text("Dein bisheriger Zugang in Stundenblick wird dabei ersetzt.", color = LocalSignals.current.changed)
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Button(enabled = !busy, onClick = {
+        Button(shape = RectangleShape, enabled = !busy, onClick = {
             busy = true
             scope.launch {
                 runCatching { repo.login(Profile(l.server, l.school, "", l.user, l.key)) }
@@ -244,7 +249,7 @@ private fun LinkConfirm(repo: Repo, l: SetSchool, onDone: () -> Unit) {
 @Composable
 private fun Card(content: @Composable () -> Unit) {
     Column(
-        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp)).padding(16.dp),
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RectangleShape).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) { content() }
 }
@@ -279,7 +284,7 @@ private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
     BackHandler(enabled = school != null) { school = null; error = null; needsCode = false }
     Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Spacer(Modifier.height(12.dp))
-        Text("Stundenblick", fontSize = 32.sp, fontWeight = FontWeight.Bold)
+        PosterTitle("Stundenblick", size = 72)
         Text("Alle Stundenpläne deiner Schule, die Untis für dich freigibt: Klassen, Lehrkräfte, Räume. Mit Ausfällen, Vertretungen und Klausuren auf einen Blick.",
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -292,7 +297,7 @@ private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
                 Text("Der sicherste Weg, auch mit Zwei-Faktor-Anmeldung: WebUntis im Browser öffnen → Profil → Freigaben → „Anzeigen“. Scanne den QR-Code mit der Kamera-App, sie öffnet Stundenblick. Oder kopiere den Link darunter und füge ihn hier ein.",
                     fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(pasted, { pasted = it }, Modifier.fillMaxWidth(), placeholder = { Text("untis://setschool?…") }, singleLine = true)
-                Button(enabled = pasted.isNotBlank() && !busy, onClick = {
+                Button(shape = RectangleShape, enabled = pasted.isNotBlank() && !busy, onClick = {
                     val l = Parse.setSchool(pasted)
                     if (l == null) error = "Das ist kein gültiger Untis-Link." else run { repo.login(Profile(l.server, l.school, "", l.user, l.key)); onDone() }
                 }) { Text("Link übernehmen") }
@@ -304,7 +309,7 @@ private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = { if (query.length >= 3) run { results = withContext(Dispatchers.IO) { Untis.searchSchools(query.trim()) } } }),
                 )
-                Button(enabled = query.trim().length >= 3 && !busy, onClick = { run { results = withContext(Dispatchers.IO) { Untis.searchSchools(query.trim()) } } }) { Text("Suchen") }
+                Button(shape = RectangleShape, enabled = query.trim().length >= 3 && !busy, onClick = { run { results = withContext(Dispatchers.IO) { Untis.searchSchools(query.trim()) } } }) { Text("Suchen") }
                 results?.let { list ->
                     if (list.isEmpty()) Text("Keine Schule gefunden.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     list.forEach { r ->
@@ -328,7 +333,7 @@ private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
                     visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
                 if (needsCode) OutlinedTextField(code, { code = it.filter(Char::isDigit).take(6) }, Modifier.fillMaxWidth(), label = { Text("6-stelliger Code") },
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
-                Button(enabled = user.isNotBlank() && password.isNotBlank() && !busy, onClick = {
+                Button(shape = RectangleShape, enabled = user.isNotBlank() && password.isNotBlank() && !busy, onClick = {
                     run {
                         val secret = withContext(Dispatchers.IO) { Untis.appSecret(s.server, s.login, user.trim(), password, code.ifBlank { null }) }
                         repo.login(Profile(s.server, s.login, s.name, user.trim(), secret))
@@ -336,7 +341,7 @@ private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
                         onDone()
                     }
                 }) { Text("Anmelden") }
-                OutlinedButton(enabled = !busy, onClick = { run { repo.login(Profile(s.server, s.login, s.name, null, null)); onDone() } }) { Text("Ohne Anmeldung: öffentlicher Plan") }
+                OutlinedButton(shape = RectangleShape, enabled = !busy, onClick = { run { repo.login(Profile(s.server, s.login, s.name, null, null)); onDone() } }) { Text("Ohne Anmeldung: öffentlicher Plan") }
                 TextButton(onClick = { school = null; error = null; needsCode = false }) { Text("Andere Schule") }
             }
         }

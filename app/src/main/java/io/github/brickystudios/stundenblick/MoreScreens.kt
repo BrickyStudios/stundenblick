@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -40,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -59,7 +59,7 @@ private fun Page(title: String, onBack: (() -> Unit)?, actions: @Composable () -
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(title, fontWeight = FontWeight.SemiBold) },
+                title = { Text(title.uppercase()) },
                 navigationIcon = { if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück") } },
                 actions = { actions() },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
@@ -110,7 +110,7 @@ fun VerlaufScreen(repo: Repo, onBack: () -> Unit) {
         } else LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(bottom = 24.dp)) {
             items(entries, key = { "${it.id}${it.at}${it.text}" }) { e ->
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.Top) {
-                    Box(Modifier.padding(top = 7.dp).size(8.dp).background(if (e.seen) MaterialTheme.colorScheme.outlineVariant else MaterialTheme.colorScheme.primary, CircleShape)
+                    Box(Modifier.padding(top = 7.dp).size(8.dp).background(if (e.seen) MaterialTheme.colorScheme.outlineVariant else MaterialTheme.colorScheme.primary, RectangleShape)
                         .semantics { contentDescription = if (e.seen) "" else "neu" })
                     Column(Modifier.padding(start = 12.dp)) {
                         Text(e.text, fontSize = 15.sp)
@@ -150,7 +150,7 @@ fun RoomFinderScreen(repo: Repo, onBack: () -> Unit) {
                     else -> "heute frei" to true
                 }
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(10.dp).background(when (free) { true -> MaterialTheme.colorScheme.primary; false -> s.cancelled; null -> MaterialTheme.colorScheme.outlineVariant }, CircleShape))
+                    Box(Modifier.size(10.dp).background(when (free) { true -> MaterialTheme.colorScheme.primary; false -> s.cancelled; null -> MaterialTheme.colorScheme.outlineVariant }, RectangleShape))
                     Column(Modifier.padding(start = 14.dp).weight(1f)) {
                         Text(room.name, fontSize = 17.sp, fontWeight = FontWeight.Medium)
                         Text(line, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -64,7 +64,7 @@ private fun <T> InfoPage(repo: Repo, kind: Repo.Info, title: String, empty: Stri
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(title, fontWeight = FontWeight.SemiBold) },
+                title = { Text(title.uppercase()) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück") } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -102,7 +102,7 @@ fun ExamsScreen(repo: Repo, onBack: () -> Unit) {
             }
             Text("${day.format(e.start)}, ${hm.format(e.start)}–${hm.format(e.end)}" + e.roomIds.joinToString { m?.find(Kind.ROOM, it)?.name ?: "" }.let { if (it.isBlank()) "" else ", Raum $it" },
                 fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            listOf(e.type, e.name.takeIf { it != subject?.longName }, e.text).filter { !it.isNullOrBlank() }.distinct().joinToString(" · ").takeIf { it.isNotBlank() }
+            listOf(e.type, e.name.takeIf { it != subject?.longName }, e.text).filter { !it.isNullOrBlank() }.distinct().joinToString(", ").takeIf { it.isNotBlank() }
                 ?.let { Text(it, fontSize = 13.sp, color = LocalSignals.current.muted) }
         }
     }

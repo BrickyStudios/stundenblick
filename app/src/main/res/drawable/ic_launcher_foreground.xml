@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- the week as a grid of buff squares on ink; the one changed lesson in vermilion -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFFFFF" android:fillAlpha="0.35"
+    <path android:fillColor="#ECE4D0" android:fillAlpha="0.4"
         android:pathData="M34,34h12v12h-12zM48,34h12v12h-12zM62,34h12v12h-12zM34,48h12v12h-12zM34,62h12v12h-12zM48,62h12v12h-12zM62,62h12v12h-12zM62,48h12v12h-12z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M50,48h8a2,2 0,0 1,2 2v8a2,2 0,0 1,-2 2h-8a2,2 0,0 1,-2 -2v-8a2,2 0,0 1,2 -2z" />
+    <path android:fillColor="#E55033" android:pathData="M48,48h12v12h-12z" />
 </vector>
