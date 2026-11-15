@@ -2,22 +2,23 @@
 
 <h1 align="center">Stundenblick: Untis-Stundenplan-App für Android, quelloffener Nachfolger von BetterUntis</h1>
 
-<p align="center"><strong>Alle Stundenpläne, die deine Schule in WebUntis für dich freigibt: deine Klasse, andere Klassen, Lehrkräfte, Räume. Ausfall, Vertretung, Raumänderung und Klausur sind farbig markiert, du siehst die freien Räume der ganzen Schule, Oberstufenkurse lassen sich ausblenden, der Plan bleibt offline lesbar, und eine Meldung kommt, wenn sich etwas ändert. Ohne Tracking, ohne Google-Dienste, GPL-3.0.</strong></p>
+<p align="center"><strong>Alle Stundenpläne, die deine Schule in WebUntis für dich freigibt: deine Klasse, andere Klassen, Lehrkräfte, Räume. Ausfall, Vertretung, Raumänderung und Klausur sind farbig markiert, du siehst die freien Räume der ganzen Schule, Oberstufenkurse lassen sich ausblenden, der Plan bleibt offline lesbar, und eine Meldung kommt, wenn sich etwas ändert. Ohne Tracking, ohne Google-Dienste, 1,5 MB groß, GPL-3.0.</strong></p>
 
 <p align="center">
-  <a href="https://kotlinlang.org/"><img alt="Made with Kotlin" src="https://img.shields.io/badge/made_with-Kotlin-14161D?style=for-the-badge&logo=kotlin&logoColor=8E99FF"></a>
+  <a href="https://kotlinlang.org/"><img alt="Made with Kotlin" src="https://img.shields.io/badge/made_with-Kotlin-15100E?style=for-the-badge&logo=kotlin&logoColor=ECE4D0"></a>
   <br>
-  <a href="#installieren"><img alt="Android 8.0 oder neuer" src="https://img.shields.io/badge/Android-8.0%2B-4352E0?logo=android&logoColor=8E99FF&labelColor=14161D"></a>
-  <a href="#datenschutz"><img alt="Ohne Google-Dienste, läuft auf GrapheneOS" src="https://img.shields.io/badge/GrapheneOS-ohne_Google--Dienste-4352E0?labelColor=14161D"></a>
-  <a href="https://developer.android.com/compose"><img alt="Jetpack Compose" src="https://img.shields.io/badge/UI-Jetpack_Compose-4352E0?logo=jetpackcompose&logoColor=8E99FF&labelColor=14161D"></a>
-  <a href="https://github.com/BrickyStudios/stundenblick/actions/workflows/ci.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/BrickyStudios/stundenblick/ci.yml?label=tests&color=4352E0&labelColor=14161D"></a>
-  <a href="LICENSE"><img alt="Lizenz GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-4352E0?labelColor=14161D"></a>
-  <a href="https://github.com/BrickyStudios/stundenblick/commits/main"><img alt="Letzter Commit" src="https://img.shields.io/github/last-commit/BrickyStudios/stundenblick?color=4352E0&labelColor=14161D"></a>
+  <a href="#größe-und-tempo"><img alt="APK 1,5 MB" src="https://img.shields.io/badge/APK-1%2C5_MB-C12B09?labelColor=15100E"></a>
+  <a href="#installieren"><img alt="Android 8.0 oder neuer" src="https://img.shields.io/badge/Android-8.0%2B-C12B09?logo=android&logoColor=ECE4D0&labelColor=15100E"></a>
+  <a href="#datenschutz"><img alt="Ohne Google-Dienste, läuft auf GrapheneOS" src="https://img.shields.io/badge/GrapheneOS-ohne_Google--Dienste-C12B09?labelColor=15100E"></a>
+  <a href="https://developer.android.com/compose"><img alt="Jetpack Compose" src="https://img.shields.io/badge/UI-Jetpack_Compose-C12B09?logo=jetpackcompose&logoColor=ECE4D0&labelColor=15100E"></a>
+  <a href="https://github.com/BrickyStudios/stundenblick/actions/workflows/ci.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/BrickyStudios/stundenblick/ci.yml?label=tests&color=C12B09&labelColor=15100E"></a>
+  <a href="LICENSE"><img alt="Lizenz GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-C12B09?labelColor=15100E"></a>
+  <a href="https://github.com/BrickyStudios/stundenblick/commits/main"><img alt="Letzter Commit" src="https://img.shields.io/github/last-commit/BrickyStudios/stundenblick?color=C12B09&labelColor=15100E"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/BrickyStudios/stundenblick/releases/latest/download/Stundenblick.apk"><img alt="Stundenblick.apk herunterladen" src="https://img.shields.io/badge/Download-Stundenblick.apk-4352E0?style=for-the-badge&logo=android&logoColor=ECEDF2&labelColor=4352E0&color=14161D"></a>
-  <a href="https://brickystudios.github.io/stundenblick/"><img alt="Website" src="https://img.shields.io/badge/Website-Deutsch-14161D?style=for-the-badge&labelColor=14161D&color=232A5C"></a>
+  <a href="https://github.com/BrickyStudios/stundenblick/releases/latest/download/Stundenblick.apk"><img alt="Stundenblick.apk herunterladen" src="https://img.shields.io/badge/Download-Stundenblick.apk-C12B09?style=for-the-badge&logo=android&logoColor=ECE4D0&labelColor=C12B09&color=15100E"></a>
+  <a href="https://brickystudios.github.io/stundenblick/"><img alt="Website" src="https://img.shields.io/badge/Website-Deutsch-15100E?style=for-the-badge&labelColor=15100E&color=332C29"></a>
 </p>
 
 <p align="center">
@@ -32,11 +33,25 @@
 
 [BetterUntis](https://github.com/SapuSeven/BetterUntis) hat seit November 2023 keine stabile Version mehr bekommen. Die Untis-Schnittstelle dahinter läuft weiter (geprüft am 15.11.2026), aber Untis baut um: Konten mit Zwei-Faktor-Anmeldung kommen über Benutzername und Passwort nicht mehr rein, und manche Konten sehen ihren eigenen Plan leer. Stundenblick ist ein neu geschriebener Client für dieselbe Schnittstelle, die auch die offizielle App nutzt.
 
+## Größe und Tempo
+
+In Stundenblick steckt außer den Android-Bausteinen (AndroidX, Jetpack Compose) keine fremde Bibliothek, also keine Werbung, kein Tracking, kein Firebase und keine Google-Dienste. Netzwerk und JSON laufen über das, was Android schon mitbringt.
+
+| | Stundenblick 0.12 |
+| --- | --- |
+| Download (APK) | 1,5 MB |
+| Installiert | 3,9 MB |
+| Kaltstart bis zum ersten Bild | 0,6 s (Median aus 10) |
+| Wiederöffnen aus dem Hintergrund | 0,06 s (Median aus 10) |
+| Arbeitsspeicher (PSS) | 30 MB |
+
+<sub>Gemessen am 15.11.2026 im Android-Emulator (Android 14, x86_64) mit der Demo-Schule, per `adb shell am start -W` und `dumpsys meminfo`.</sub>
+
 ## Was die App kann
 
 - **Heute-Seite:** jetzige und nächste Stunde mit Raum und Restminuten, Änderungen seit gestern, nach Schulschluss der nächste Schultag, die Woche in Zahlen und der Ferien-Countdown.
 - **Jeder freigegebene Plan:** eigene Klasse, andere Klassen, Lehrkräfte, Räume, Fächer, mit Suche und Favoriten. Über fremden Plänen steht, wo die Lehrkraft oder Klasse gerade ist. Namen in den Details öffnen deren Plan.
-- **Änderungen auf einen Blick:** Entfall rot und durchgestrichen, Vertretung und Raumänderung orange mit dem alten Namen daneben, Klausur blau, Zusatzstunde hellblau, neue Änderungen mit Punkt markiert.
+- **Änderungen auf einen Blick:** Entfall rot und durchgestrichen, Vertretung, Raumänderung und Zusatzstunde ocker mit dem alten Namen daneben, Klausur schwarz gerahmt, neue Änderungen mit Punkt markiert. Jedes Fach trägt die Farbe, die ihm die Schule in Untis gibt.
 - **Woche oder Tag:** Wochenraster mit Doppelstunden als Block, Jetzt-Linie und Kursnamen; Tagesliste mit Pausen und Freistunden.
 - **Die ganze Woche, auch wenn die Schule nur morgen zeigt:** Tage, die Untis noch nicht freigibt, füllt die App blass mit dem normalen Plan aus einer früheren Woche, ohne Ausfälle und Vertretungen. Sobald die Schule den Tag freigibt, stehen dort die echten Stunden.
 - **Schule auf einen Blick:** alle freien Räume einer Stunde, bis wann sie frei sind und ob sie durch Entfall frei wurden, dazu wer wo Unterricht hat, durchsuchbar nach Klasse, Kurs, Lehrkraft oder Raum. Gibt die Schule Raum- oder Lehrkraftpläne nicht frei, setzt die App sie aus den Klassenplänen zusammen.
@@ -62,7 +77,7 @@
 2. Anmelden, am besten per QR-Code: WebUntis im Browser öffnen → Profil → Freigaben → „Anzeigen“. Den QR-Code mit der Kamera-App scannen, sie öffnet Stundenblick. Das klappt auch mit Zwei-Faktor-Anmeldung und mit IServ-Konten.
 3. Alternativ die Schule suchen und mit Benutzername und Passwort anmelden, oder ohne Anmeldung, falls deine Schule öffentliche Pläne hat.
 
-**Stand 0.11:** Demo, Schulsuche, anonymer Zugang und alle Ansichten sind auf dem Emulator getestet, die Anmeldung per QR-Code mit einem echten Schulkonto (Microsoft-Anmeldung) ebenfalls. Passwort- und 2FA-Anmeldung sind noch nicht mit echten Konten getestet. Wenn etwas hakt: Einstellungen → Verbindungstest → Kopieren und als [Issue](https://github.com/BrickyStudios/stundenblick/issues) einreichen.
+**Stand 0.12:** Demo, Schulsuche, anonymer Zugang und alle Ansichten sind auf dem Emulator getestet, die Anmeldung per QR-Code mit einem echten Schulkonto (Microsoft-Anmeldung) ebenfalls. Passwort- und 2FA-Anmeldung sind noch nicht mit echten Konten getestet. Wenn etwas hakt: Einstellungen → Verbindungstest → Kopieren und als [Issue](https://github.com/BrickyStudios/stundenblick/issues) einreichen.
 
 ## Datenschutz
 
