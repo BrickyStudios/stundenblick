@@ -56,8 +56,9 @@ class Repo private constructor(ctx: Context) {
         prefs.edit().putString("own", e?.key).putString("ownName", e?.longName).apply()
         own.value = e?.copy(name = "Mein Plan")
         // another plan: the old plan's history and day caches no longer apply
-        listOf("history.json", "exams.json", "homework.json", "absences.json", "done.json").forEach { File(dir, it).delete() }
+        listOf("history.json", "exams.json", "homework.json", "absences.json", "officehours.json").forEach { File(dir, it).delete() }
         history.value = emptyList()
+        info.clear()
     }
 
     // ---- names for favorites: "CLASS:3|Q2"
@@ -100,7 +101,7 @@ class Repo private constructor(ctx: Context) {
         val named = if (p.schoolName.isBlank()) p.copy(schoolName = ud.optJSONObject("userData")?.optString("schoolName").orEmpty()) else p
         logout()
         writeJson("profile.json", named.toJson())
-        writeJson("master.json", JSONObject().put("savedAt", System.currentTimeMillis()).put("data", md))
+        writeJson("master.json", masterFile(md, ud))
         profile.value = named
         master.value = m
         setOwn(ud.optJSONObject("userData")?.let(Parse::own))
@@ -112,11 +113,20 @@ class Repo private constructor(ctx: Context) {
         val saved = readJson("master.json")?.optLong("savedAt") ?: 0
         if (System.currentTimeMillis() - saved < 24 * 3600_000L) return@withContext
         runCatching {
-            val md = userData(p).getJSONObject("masterData")
+            val ud = userData(p)
+            val md = ud.getJSONObject("masterData")
             master.value = Parse.master(md)
-            writeJson("master.json", JSONObject().put("savedAt", System.currentTimeMillis()).put("data", md))
+            writeJson("master.json", masterFile(md, ud))
         }
     }
+
+    private fun masterFile(md: JSONObject, ud: JSONObject) = JSONObject().put("savedAt", System.currentTimeMillis()).put("data", md)
+        .put("rights", ud.optJSONObject("userData")?.optJSONArray("rights") ?: org.json.JSONArray())
+        .put("klassenIds", ud.optJSONObject("userData")?.optJSONArray("klassenIds") ?: org.json.JSONArray())
+
+    private fun masterExtras() = readJson("master.json")
+    fun rights(): Set<String> = masterExtras()?.optJSONArray("rights").strings().toSet()
+    private fun schoolYear(day: LocalDate) = masterExtras()?.optJSONObject("data")?.let { Parse.schoolYear(it, day) }
 
     fun logout() {
         dir.listFiles()?.forEach { it.deleteRecursively() }
@@ -128,6 +138,7 @@ class Repo private constructor(ctx: Context) {
         favorites.value = emptySet()
         history.value = emptyList()
         rooms.value = emptySet()
+        info.clear()
     }
 
     private fun weekFile(e: Element, monday: LocalDate) = "weeks/${e.kind.name}-${e.id}-$monday.json"
@@ -178,6 +189,90 @@ class Repo private constructor(ctx: Context) {
                 parts.map { it.info }.filter(String::isNotBlank).distinct().joinToString("\n"),
             )
         }
+    }
+
+    // ---- Info Center (wave B): one cached answer per endpoint, at most once a day (the message: every two hours)
+    enum class Info(val file: String) { EXAMS("exams.json"), HOMEWORK("homework.json"), ABSENCES("absences.json"), MESSAGES("messages.json"), OFFICE("officehours.json") }
+    data class InfoState(val data: JSONObject?, val savedAt: Long, val day: String?, val noRight: Boolean, val loading: Boolean = false, val error: String? = null)
+
+    val info = mutableStateMapOf<Info, InfoState>()
+
+    private fun readInfo(k: Info) = readJson(k.file)?.let { InfoState(it.optJSONObject("data"), it.optLong("savedAt"), it.optString("day").ifBlank { null }, it.optBoolean("noRight")) }
+        ?: InfoState(null, 0, null, false)
+
+    /** what the screens read; the cache file until the first load of this run */
+    fun infoOf(k: Info): InfoState = info[k] ?: readInfo(k)
+
+    /** Untis hands this to the account at all? Without login there is no homework or absence list. */
+    fun offers(k: Info): Boolean {
+        val p = profile.value ?: return false
+        if (infoOf(k).noRight) return false
+        return when (k) {
+            Info.HOMEWORK, Info.ABSENCES -> !p.anonymous || p.demo
+            Info.EXAMS -> own.value != null
+            Info.OFFICE -> "R_OFFICEHOURS" in rights() && officeClass() != null
+            Info.MESSAGES -> true
+        }
+    }
+
+    private fun officeClass(): Long? = masterExtras()?.optJSONArray("klassenIds")?.let { if (it.length() > 0) it.optLong(0) else null }
+        ?: own.value?.takeIf { it.kind == Kind.CLASS }?.id
+
+    suspend fun loadInfo(k: Info, force: Boolean = false) = withContext(Dispatchers.IO) {
+        val p = profile.value ?: return@withContext
+        if (!offers(k)) return@withContext
+        val cur = infoOf(k)
+        val today = LocalDate.now()
+        val due = if (k == Info.MESSAGES) Fetch.message(cur.savedAt, System.currentTimeMillis(), force)
+        else Fetch.daily(cur.day?.let { runCatching { LocalDate.parse(it) }.getOrNull() }, today, force)
+        if (!due || cur.loading) { info[k] = cur; return@withContext }
+        info[k] = cur.copy(loading = true, error = null)
+        val own = own.value
+        runCatching {
+            when (k) {
+                Info.EXAMS -> if (p.demo) Demo.exams() else Untis.exams(p, own!!.kind, own.id, today, schoolYear(today)?.endInclusive ?: today.plusDays(90))
+                Info.HOMEWORK -> if (p.demo) Demo.homework() else Untis.homework(p, own!!.kind, own.id, today.minusDays(7), today.plusDays(28))
+                Info.ABSENCES -> if (p.demo) Demo.absences() else Untis.absences(p, schoolYear(today)?.start ?: today.minusDays(180), today)
+                Info.MESSAGES -> if (p.demo) Demo.messagesOfDay() else Untis.messagesOfDay(p, today)
+                Info.OFFICE -> if (p.demo) Demo.officeHours() else Untis.officeHours(p, officeClass()!!, today)
+            }
+        }.fold(
+            { r ->
+                val now = System.currentTimeMillis()
+                writeJson(k.file, JSONObject().put("savedAt", now).put("day", today.toString()).put("data", r))
+                if (k == Info.EXAMS) recordExams(cur.data, r)
+                info[k] = InfoState(r, now, today.toString(), false)
+                if (k == Info.EXAMS) DayWidget.update(app)
+            },
+            { e ->
+                if (e is UntisException && e.code == -8509) {
+                    // the school does not hand this out: remember it, so the entry stays hidden
+                    writeJson(k.file, JSONObject().put("savedAt", System.currentTimeMillis()).put("day", today.toString()).put("noRight", true))
+                    info[k] = InfoState(null, System.currentTimeMillis(), today.toString(), true)
+                } else info[k] = cur.copy(loading = false, error = Errors.explain(e)) // network: keep the cache and the day unset
+            },
+        )
+    }
+
+    /** V4: a newly announced exam goes into the change history, without an extra request */
+    private fun recordExams(old: JSONObject?, fresh: JSONObject) {
+        old ?: return
+        val m = master.value
+        val before = InfoParse.exams(old).map { it.id }.toSet()
+        val day = java.time.format.DateTimeFormatter.ofPattern("EE d.M.", java.util.Locale.GERMAN)
+        val add = InfoParse.exams(fresh).filter { it.id !in before }.map { e ->
+            val subject = e.subjectId?.let { m?.find(Kind.SUBJECT, it)?.name } ?: e.name.ifBlank { "Klausur" }
+            Entry(-e.id, "Neue Klausur: $subject am ${day.format(e.start)}", System.currentTimeMillis(), false)
+        }
+        if (add.isNotEmpty()) synchronized(historyLock) { writeHistory(history.value + add) }
+    }
+
+    // homework ticked off on this phone only; Untis' own "completed" also counts
+    val homeworkDone = mutableStateOf(prefs.getStringSet("hwDone", emptySet())!!.mapNotNull { it.toLongOrNull() }.toSet())
+    fun toggleDone(id: Long) {
+        val next = if (id in homeworkDone.value) homeworkDone.value - id else homeworkDone.value + id
+        prefs.edit().putStringSet("hwDone", next.map { it.toString() }.toSet()).apply()
+        homeworkDone.value = next
     }
 
     // ---- RoomFinder (J2): rooms the user picked, each week loaded at most once

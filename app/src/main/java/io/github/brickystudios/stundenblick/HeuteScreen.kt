@@ -55,7 +55,7 @@ private val hm = DateTimeFormatter.ofPattern("HH:mm")
 /** H1: what matters today and next, on one screen. Untis Mobile spreads this over several tabs. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HeuteScreen(repo: Repo, onOpenPlan: () -> Unit, onHistory: () -> Unit, onSetOwn: () -> Unit) {
+fun HeuteScreen(repo: Repo, onOpenPlan: () -> Unit, onHistory: () -> Unit, onSetOwn: () -> Unit, onInfo: (Repo.Info) -> Unit) {
     val own = repo.own.value
     val master = repo.master.value
     val now by produceState(LocalDateTime.now()) { while (true) { delay(30_000); value = LocalDateTime.now() } }
@@ -82,7 +82,14 @@ fun HeuteScreen(repo: Repo, onOpenPlan: () -> Unit, onHistory: () -> Unit, onSet
     LaunchedEffect(own.key, today) {
         repo.load(own, thisMonday)
         if (Parse.monday(nextDay) != thisMonday) repo.load(own, Parse.monday(nextDay))
+        listOf(Repo.Info.MESSAGES, Repo.Info.EXAMS, Repo.Info.HOMEWORK).forEach { repo.loadInfo(it) }
     }
+    // wave B cards: the school's message, the next exam, homework due by the next school day
+    val messages = repo.infoOf(Repo.Info.MESSAGES).data?.let { runCatching { InfoParse.messages(it) }.getOrNull() }.orEmpty()
+    val nextExam = repo.infoOf(Repo.Info.EXAMS).data?.let { runCatching { InfoParse.exams(it) }.getOrNull() }.orEmpty()
+        .filter { !it.start.toLocalDate().isBefore(today) && (it.subjectId == null || it.subjectId !in hidden) }.minByOrNull { it.start }
+    val dueSoon = repo.infoOf(Repo.Info.HOMEWORK).data?.let { runCatching { InfoParse.homework(it) }.getOrNull() }.orEmpty()
+        .filter { h -> !h.completed && h.id !in repo.homeworkDone.value && h.due != null && !h.due.isBefore(today) && !h.due.isAfter(nextDay) && (h.subjectId == null || h.subjectId !in hidden) }
     fun day(d: LocalDate) = week(Parse.monday(d))?.periods?.let { ps -> Derive.blocks(Filter.apply(ps, hidden).filter { it.start.toLocalDate() == d }) }
     val todays = day(today).orEmpty()
     val state = Derive.now(todays, now)
@@ -99,6 +106,7 @@ fun HeuteScreen(repo: Repo, onOpenPlan: () -> Unit, onHistory: () -> Unit, onSet
                 refreshing = true
                 repo.load(own, thisMonday, force = true)
                 if (Parse.monday(nextDay) != thisMonday) repo.load(own, Parse.monday(nextDay), force = true)
+                listOf(Repo.Info.MESSAGES, Repo.Info.EXAMS, Repo.Info.HOMEWORK).forEach { repo.loadInfo(it, force = true) }
                 refreshing = false
             }
         },
@@ -123,6 +131,30 @@ fun HeuteScreen(repo: Repo, onOpenPlan: () -> Unit, onHistory: () -> Unit, onSet
             if (!schoolOver && state.next.isNotEmpty() && holiday?.running != true) Card {
                 Label("Als Nächstes um ${hm.format(state.next.first().start)}")
                 state.next.forEach { LessonLine(it, master, big = state.current.isEmpty()) }
+            }
+
+            messages.forEach { msg ->
+                Card {
+                    Label("Nachricht der Schule")
+                    Text(msg.subject, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    if (msg.text.isNotBlank()) Text(msg.text, fontSize = 15.sp)
+                    if (msg.attachments > 0) Text("${msg.attachments} Anhang/Anhänge in WebUntis", fontSize = 13.sp, color = s.muted)
+                }
+            }
+
+            if (dueSoon.isNotEmpty()) Card(Modifier.clickable { onInfo(Repo.Info.HOMEWORK) }) {
+                Label("Hausaufgaben bis " + if (ChronoUnit.DAYS.between(today, nextDay) == 1L) "morgen" else dm.format(nextDay))
+                dueSoon.forEach { h ->
+                    val subject = h.subjectId?.let { master?.find(Kind.SUBJECT, it)?.name }
+                    Text((subject?.let { "$it: " } ?: "") + h.text, fontSize = 15.sp)
+                }
+            }
+
+            if (nextExam != null && ChronoUnit.DAYS.between(today, nextExam.start.toLocalDate()) <= 21) Card(Modifier.clickable { onInfo(Repo.Info.EXAMS) }) {
+                Label("Nächste Klausur " + daysUntil(nextExam.start.toLocalDate(), today))
+                val subject = nextExam.subjectId?.let { master?.find(Kind.SUBJECT, it) }
+                Text(subject?.let { it.longName.ifBlank { it.name } } ?: nextExam.name.ifBlank { "Klausur" }, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                Text(shortDay.format(nextExam.start).replaceFirstChar { it.uppercase() } + ", " + dm.format(nextExam.start) + ", " + hm.format(nextExam.start), color = s.muted, fontSize = 14.sp)
             }
 
             if (recent.isNotEmpty()) Card(Modifier.clickable(onClick = onHistory)) {

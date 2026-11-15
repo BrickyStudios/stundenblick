@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -79,9 +81,16 @@ private fun Entry(title: String, line: String, onClick: () -> Unit) {
 
 /** Everything that is not today or the plan. */
 @Composable
-fun MehrScreen(repo: Repo, onHistory: () -> Unit, onRooms: () -> Unit, onSettings: () -> Unit) {
+fun MehrScreen(repo: Repo, onHistory: () -> Unit, onRooms: () -> Unit, onSettings: () -> Unit, onInfo: (Repo.Info) -> Unit) {
+    LaunchedEffect(Unit) { listOf(Repo.Info.EXAMS, Repo.Info.HOMEWORK, Repo.Info.ABSENCES).forEach { repo.loadInfo(it) } }
     Page("Mehr", null) { pad ->
-        Column(Modifier.padding(pad)) {
+        Column(Modifier.padding(pad).verticalScroll(rememberScrollState())) {
+            // Info Center like BetterUntis: only what the school hands to this account
+            fun count(k: Repo.Info, parse: (org.json.JSONObject) -> List<*>) = repo.infoOf(k).data?.let { runCatching { parse(it).size }.getOrNull() }
+            if (repo.offers(Repo.Info.EXAMS)) Entry("Klausuren", count(Repo.Info.EXAMS) { InfoParse.exams(it) }?.let { if (it == 0) "keine eingetragen" else "$it bis zum Schuljahresende" } ?: "laden") { onInfo(Repo.Info.EXAMS) }
+            if (repo.offers(Repo.Info.HOMEWORK)) Entry("Hausaufgaben", count(Repo.Info.HOMEWORK) { InfoParse.homework(it) }?.let { if (it == 0) "keine eingetragen" else "$it eingetragen" } ?: "laden") { onInfo(Repo.Info.HOMEWORK) }
+            if (repo.offers(Repo.Info.ABSENCES)) Entry("Fehlzeiten", count(Repo.Info.ABSENCES) { InfoParse.absences(it) }?.let { "$it in diesem Schuljahr" } ?: "laden") { onInfo(Repo.Info.ABSENCES) }
+            if (repo.offers(Repo.Info.OFFICE)) Entry("Sprechstunden", "der Lehrkräfte deiner Klasse") { onInfo(Repo.Info.OFFICE) }
             val unseen = repo.history.value.count { !it.seen }
             Entry("Änderungsverlauf", if (unseen > 0) "$unseen neu" else "${repo.history.value.size} Einträge der letzten 60 Tage", onHistory)
             Entry("Raumfinder", if (repo.rooms.value.isEmpty()) "Räume wählen und sehen, wann sie frei sind" else "${repo.rooms.value.size} Räume", onRooms)

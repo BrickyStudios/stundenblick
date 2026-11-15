@@ -68,7 +68,8 @@ object Demo {
     private fun holidayStart(): LocalDate = Parse.monday(LocalDate.now()).plusWeeks(5)
 
     fun userData(): JSONObject = JSONObject().put("masterData", master())
-        .put("userData", JSONObject().put("elemType", "CLASS").put("elemId", 3).put("displayName", "Q2"))
+        .put("userData", JSONObject().put("elemType", "CLASS").put("elemId", 3).put("displayName", "Q2")
+            .put("rights", JSONArray(listOf("R_MY_ABSENCES", "R_OFFICEHOURS"))).put("klassenIds", JSONArray().put(3)))
 
     /** The same week rhythm every week, with deviations tied to weekdays so the current week always shows each kind. */
     fun timetable(kind: Kind, id: Long, monday: LocalDate): JSONObject {
@@ -140,4 +141,49 @@ object Demo {
         return JSONObject().put("dataByTTId", by)
     }
 
+
+    // ---- Info Center answers in Untis' shape; dates relative to today so the demo always has something ahead
+    private fun at(days: Long, time: String) = "${weekday(LocalDate.now().plusDays(days))}T$time" + "Z"
+
+    /** demo dates never land on a weekend */
+    private fun weekday(d: LocalDate): LocalDate = when (d.dayOfWeek) {
+        java.time.DayOfWeek.SATURDAY -> d.plusDays(2)
+        java.time.DayOfWeek.SUNDAY -> d.plusDays(1)
+        else -> d
+    }
+
+    fun exams(): JSONObject = JSONObject().put("type", "CLASS").put("id", 3).put("exams", JSONArray(listOf(
+        Triple(3L, 22L, "Klausur Mathematik LK") to "08:00",
+        Triple(12L, 23L, "Klausur Englisch") to "09:55",
+        Triple(30L, 24L, "Klausur Biologie") to "08:00",
+    ).mapIndexed { i, (e, time) ->
+        JSONObject().put("id", 9100 + i).put("examType", "Klausur").put("name", e.third).put("text", "")
+            .put("startDateTime", at(e.first, time)).put("endDateTime", at(e.first, if (time == "08:00") "09:35" else "11:30"))
+            .put("subjectId", e.second).put("roomIds", JSONArray().put(33)).put("teacherIds", JSONArray().put(12)).put("klasseIds", JSONArray().put(3))
+    }))
+
+    fun homework(): JSONObject = JSONObject()
+        .put("homeWorks", JSONArray()
+            .put(JSONObject().put("id", 9201).put("lessonId", 32212).put("startDate", LocalDate.now().minusDays(2).toString())
+                .put("endDate", LocalDate.now().plusDays(1).toString()).put("text", "Aufgaben 4–7 auf S. 112").put("remark", JSONObject.NULL).put("completed", false))
+            .put(JSONObject().put("id", 9202).put("lessonId", 32111).put("startDate", LocalDate.now().minusDays(1).toString())
+                .put("endDate", LocalDate.now().plusDays(6).toString()).put("text", "Gedicht von Georg Heym analysieren, eine Seite").put("remark", "auf Papier abgeben").put("completed", false)))
+        .put("lessonsById", JSONObject()
+            .put("32212", JSONObject().put("id", 32212).put("subjectId", 22))
+            .put("32111", JSONObject().put("id", 32111).put("subjectId", 21)))
+
+    fun absences(): JSONObject = JSONObject().put("absences", JSONArray()
+        .put(JSONObject().put("id", 9301).put("startDateTime", at(-9, "08:00")).put("endDateTime", at(-9, "13:25"))
+            .put("absenceReason", "krank").put("excused", true).put("text", ""))
+        .put(JSONObject().put("id", 9302).put("startDateTime", at(-2, "14:00")).put("endDateTime", at(-2, "15:35"))
+            .put("absenceReason", "Arzttermin").put("excused", false).put("text", "Entschuldigung folgt")))
+
+    fun messagesOfDay(): JSONObject = JSONObject().put("messages", JSONArray().put(JSONObject().put("id", 9401).put("subject", "Wandertag am Freitag")
+        .put("body", "<p>Am Freitag ist für alle Klassen <b>Wandertag</b>.<br/>Treffpunkt 8:00 Uhr am Haupteingang.</p>").put("attachments", JSONArray())))
+
+    fun officeHours(): JSONObject = JSONObject().put("officeHours", JSONArray()
+        .put(JSONObject().put("id", 9501).put("startDateTime", at(1, "10:45")).put("endDateTime", at(1, "11:30"))
+            .put("displayNameTeacher", "Albers, Anna (ALB)").put("displayNameRooms", "A101").put("email", "albers@example.com").put("phone", JSONObject.NULL))
+        .put(JSONObject().put("id", 9502).put("startDateTime", at(2, "12:40")).put("endDateTime", at(2, "13:25"))
+            .put("displayNameTeacher", "Brandt, Ben (BRA)").put("displayNameRooms", "B204").put("email", JSONObject.NULL).put("phone", JSONObject.NULL)))
 }

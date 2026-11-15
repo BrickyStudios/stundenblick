@@ -91,36 +91,40 @@ class DayWidget : AppWidgetProvider() {
             if (ids.isNotEmpty()) render(ctx, m, ids)
         }
 
-        /** pure text for the widget, so it can be checked without a launcher */
+        /** the widget's text: today while lessons remain, else the next school day (holidays skipped), plus the next exam */
         fun text(repo: Repo, now: java.time.LocalDateTime = java.time.LocalDateTime.now()): Pair<String, String> {
             val own = repo.own.value ?: return "Stundenblick" to "Kein eigener Plan gesetzt. Öffne die App."
             val master = repo.master.value ?: return "Stundenblick" to "Öffne Stundenblick einmal, dann steht hier dein Tag."
             val hidden = repo.hidden(own)
-            // after the last lesson the widget turns to the next school day within a week
-            for (offset in 0..7) {
-                val day = now.toLocalDate().plusDays(offset.toLong())
-                val ps = Filter.apply(repo.cachedPeriods(own, Parse.monday(day)) ?: continue, hidden).filter { it.start.toLocalDate() == day }
-                if (ps.isEmpty() || (offset == 0 && ps.all { !it.end.isAfter(now) })) continue
-                val lines = ps.map { p ->
-                    val n = master.unitNumber(p.start.toLocalTime())?.let { "$it." } ?: clock.format(p.start)
-                    val subject = p.of(Kind.SUBJECT).firstOrNull()?.let { master.find(Kind.SUBJECT, it.id)?.name } ?: p.lessonText.ifBlank { "Stunde" }
-                    val room = p.of(Kind.ROOM).joinToString(", ") { master.find(Kind.ROOM, it.id)?.name ?: "" }.trim(',', ' ')
-                    val mark = when {
-                        p.cancelled -> "  ✕ entfällt"
-                        p.isExam -> "  ● Klausur"
-                        p.irregular -> "  ↻ geändert"
-                        else -> ""
-                    }
-                    "$n  $subject  $room$mark"
+            val today = now.toLocalDate()
+            Derive.nextHoliday(today, master)?.takeIf { it.running }?.let { return it.name to "Ferien bis ${DateTimeFormatter.ofPattern("d.M.").format(it.end)}" }
+            fun day(d: java.time.LocalDate) = repo.cachedPeriods(own, Parse.monday(d))?.let { ps -> Derive.blocks(Filter.apply(ps, hidden).filter { it.start.toLocalDate() == d }) }
+            val saturday = repo.cachedPeriods(own, Parse.monday(today))?.any { it.start.dayOfWeek == java.time.DayOfWeek.SATURDAY } == true
+            val target = if (day(today)?.any { it.end.isAfter(now) } == true) today else Derive.nextSchoolDay(today, master, saturday)
+            val title = when (java.time.temporal.ChronoUnit.DAYS.between(today, target)) {
+                0L -> "Heute"
+                1L -> "Morgen"
+                else -> dayName.format(target).substringBefore(',')
+            } + " · " + dayName.format(target).substringAfter(", ")
+            val ps = day(target) ?: return title to "Öffne Stundenblick, um den nächsten Schultag zu laden."
+            val lines = ps.map { p ->
+                val n = Derive.unitLabel(p, master)?.removeSuffix(" Std.") ?: clock.format(p.start)
+                val subject = p.of(Kind.SUBJECT).firstOrNull()?.let { master.find(Kind.SUBJECT, it.id)?.name } ?: p.lessonText.ifBlank { "Stunde" }
+                val room = p.of(Kind.ROOM).joinToString(", ") { master.find(Kind.ROOM, it.id)?.name ?: "" }.trim(',', ' ')
+                val mark = when {
+                    p.cancelled -> "  ✕ entfällt"
+                    p.isExam -> "  ● Klausur"
+                    p.irregular -> "  ↻ geändert"
+                    else -> ""
                 }
-                val title = when (offset) {
-                    0 -> "Heute"
-                    1 -> "Morgen"
-                    else -> dayName.format(day).substringBefore(',')
-                } + " · " + dayName.format(day).substringAfter(", ")
-                return title to lines.joinToString("\n")
-            }
-            return "Stundenblick" to "In den nächsten Tagen nichts im Speicher. Öffne die App, um zu laden."
+                "$n  $subject  $room$mark"
+            }.ifEmpty { listOf("Keine Stunden.") }
+            // D4: the next exam within two weeks, from the cache the app keeps
+            val exam = repo.infoOf(Repo.Info.EXAMS).data?.let { runCatching { InfoParse.exams(it) }.getOrNull() }.orEmpty()
+                .filter { !it.start.toLocalDate().isBefore(today) && (it.subjectId == null || it.subjectId !in hidden) }.minByOrNull { it.start }
+                ?.takeIf { java.time.temporal.ChronoUnit.DAYS.between(today, it.start.toLocalDate()) <= 14 }
+                ?.let { e -> "Klausur ${daysUntil(e.start.toLocalDate(), today)}: " + (e.subjectId?.let { master.find(Kind.SUBJECT, it)?.name } ?: e.name) }
+            return title to (lines + listOfNotNull(exam)).joinToString("\n")
         }
 
         private fun render(ctx: Context, manager: AppWidgetManager, ids: IntArray) {

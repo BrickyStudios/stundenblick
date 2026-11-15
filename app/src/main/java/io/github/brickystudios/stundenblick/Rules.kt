@@ -152,3 +152,9 @@ object Diag {
         else -> e.javaClass.simpleName
     }
 }
+
+/** Wave B fetch gate: lists once per calendar day, the day's message again after two hours; pull to refresh forces. */
+object Fetch {
+    fun daily(lastDay: java.time.LocalDate?, today: java.time.LocalDate, force: Boolean) = force || lastDay != today
+    fun message(lastAtMs: Long, nowMs: Long, force: Boolean) = force || nowMs - lastAtMs > 2 * 3600_000L
+}

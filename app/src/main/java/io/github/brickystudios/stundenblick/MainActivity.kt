@@ -93,7 +93,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Screen { TABS, PICK, PICK_OWN, SETTINGS, HISTORY, ROOMS }
+private enum class Screen { TABS, PICK, PICK_OWN, SETTINGS, HISTORY, ROOMS, INFO }
 
 @Composable
 private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchool?>) {
@@ -101,6 +101,7 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
     var screen by rememberSaveable { mutableStateOf(Screen.TABS) }
     var tab by rememberSaveable { mutableStateOf(if (repo.own.value != null) "heute" else "plan") }
     var shownKey by rememberSaveable { mutableStateOf(repo.last?.key) }
+    var infoKind by rememberSaveable { mutableStateOf(Repo.Info.EXAMS) }
     val profile = repo.profile.value
     val own = repo.own.value
     val update by Updater.state.collectAsState()
@@ -139,6 +140,13 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
             onLoggedOut = { screen = Screen.TABS; tab = "heute"; shownKey = null })
         Screen.HISTORY -> VerlaufScreen(repo) { screen = Screen.TABS }
         Screen.ROOMS -> RoomFinderScreen(repo) { screen = Screen.TABS }
+        Screen.INFO -> when (infoKind) {
+            Repo.Info.EXAMS -> ExamsScreen(repo) { screen = Screen.TABS }
+            Repo.Info.HOMEWORK -> HomeworkScreen(repo) { screen = Screen.TABS }
+            Repo.Info.ABSENCES -> AbsencesScreen(repo) { screen = Screen.TABS }
+            Repo.Info.OFFICE -> OfficeHoursScreen(repo) { screen = Screen.TABS }
+            Repo.Info.MESSAGES -> { screen = Screen.TABS }
+        }
         Screen.TABS -> Scaffold(
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
@@ -158,8 +166,10 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
         ) { pad ->
             Box(Modifier.padding(pad).consumeWindowInsets(pad)) {
                 when {
-                    tab == "heute" -> HeuteScreen(repo, onOpenPlan = { own?.let(::show) }, onHistory = { screen = Screen.HISTORY }, onSetOwn = { screen = Screen.PICK_OWN })
-                    tab == "mehr" -> MehrScreen(repo, onHistory = { screen = Screen.HISTORY }, onRooms = { screen = Screen.ROOMS }, onSettings = { screen = Screen.SETTINGS })
+                    tab == "heute" -> HeuteScreen(repo, onOpenPlan = { own?.let(::show) }, onHistory = { screen = Screen.HISTORY }, onSetOwn = { screen = Screen.PICK_OWN },
+                        onInfo = { infoKind = it; screen = Screen.INFO })
+                    tab == "mehr" -> MehrScreen(repo, onHistory = { screen = Screen.HISTORY }, onRooms = { screen = Screen.ROOMS }, onSettings = { screen = Screen.SETTINGS },
+                        onInfo = { infoKind = it; screen = Screen.INFO })
                     shown == null -> OwnMissing(profile, onSetOwn = { screen = Screen.PICK_OWN }, onPick = { screen = Screen.PICK }, onSettings = { screen = Screen.SETTINGS })
                     else -> TimetableScreen(repo, shown, onPick = { screen = Screen.PICK }, onSettings = { screen = Screen.SETTINGS }, onOpen = ::show)
                 }

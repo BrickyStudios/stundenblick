@@ -224,3 +224,63 @@ fun lanes(day: List<Period>): List<Placed> {
     flush()
     return out
 }
+
+// ---- Info Center (wave B): what Untis lists beside the timetable
+
+data class Exam(val id: Long, val type: String, val name: String, val text: String, val start: LocalDateTime, val end: LocalDateTime, val subjectId: Long?, val roomIds: List<Long>, val teacherIds: List<Long>)
+data class Homework(val id: Long, val subjectId: Long?, val given: LocalDate?, val due: LocalDate?, val text: String, val remark: String, val completed: Boolean)
+data class Absence(val id: Long, val start: LocalDateTime, val end: LocalDateTime, val reason: String, val excused: Boolean, val text: String)
+data class DayMessage(val id: Long, val subject: String, val text: String, val attachments: Int)
+data class OfficeHour(val id: Long, val start: LocalDateTime, val end: LocalDateTime, val teacher: String, val rooms: String, val email: String?, val phone: String?)
+
+object InfoParse {
+    /** "2026-11-18T08:00Z", "2026-11-18" or "20261118" */
+    private fun date(s: String?): LocalDate? {
+        val t = s?.trim().orEmpty()
+        return runCatching { LocalDate.parse(t.take(10)) }.getOrNull()
+            ?: runCatching { LocalDate.parse(t.take(8), java.time.format.DateTimeFormatter.BASIC_ISO_DATE) }.getOrNull()
+    }
+    private fun dateTime(s: String?): LocalDateTime? = runCatching { LocalDateTime.parse(s!!.removeSuffix("Z")) }.getOrNull()
+    private fun longs(o: JSONObject, key: String) = o.optJSONArray(key)?.let { a -> (0 until a.length()).map { a.optLong(it) } }.orEmpty()
+
+    fun exams(r: JSONObject): List<Exam> = r.optJSONArray("exams").objects().mapNotNull {
+        Exam(
+            it.optLong("id"), it.optString("examType"), it.optString("name"), it.optString("text"),
+            dateTime(it.optString("startDateTime")) ?: return@mapNotNull null, dateTime(it.optString("endDateTime")) ?: return@mapNotNull null,
+            it.optLong("subjectId").takeIf { id -> id > 0 }, longs(it, "roomIds"), longs(it, "teacherIds"),
+        )
+    }.sortedBy { it.start }
+
+    /** homework names its lesson; the lesson (in lessonsById) names the subject */
+    fun homework(r: JSONObject): List<Homework> {
+        val lessons = r.optJSONObject("lessonsById")
+        return r.optJSONArray("homeWorks").objects().map {
+            val subject = lessons?.optJSONObject(it.optLong("lessonId").toString())?.optLong("subjectId")?.takeIf { id -> id > 0 }
+            Homework(it.optLong("id"), subject, date(it.optString("startDate")), date(it.optString("endDate")),
+                it.optString("text"), it.optString("remark").takeIf { _ -> !it.isNull("remark") }.orEmpty(), it.optBoolean("completed"))
+        }.sortedWith(compareBy({ it.due }, { it.id }))
+    }
+
+    fun absences(r: JSONObject): List<Absence> = r.optJSONArray("absences").objects().mapNotNull {
+        Absence(it.optLong("id"), dateTime(it.optString("startDateTime")) ?: return@mapNotNull null, dateTime(it.optString("endDateTime")) ?: return@mapNotNull null,
+            it.optString("absenceReason"), it.optBoolean("excused"), it.optString("text"))
+    }.sortedByDescending { it.start }
+
+    fun messages(r: JSONObject): List<DayMessage> = r.optJSONArray("messages").objects().map {
+        DayMessage(it.optLong("id"), it.optString("subject"), html(it.optString("body")), it.optJSONArray("attachments")?.length() ?: 0)
+    }
+
+    fun officeHours(r: JSONObject): List<OfficeHour> = r.optJSONArray("officeHours").objects().mapNotNull {
+        OfficeHour(it.optLong("id"), dateTime(it.optString("startDateTime")) ?: return@mapNotNull null, dateTime(it.optString("endDateTime")) ?: return@mapNotNull null,
+            it.optString("displayNameTeacher"), it.optString("displayNameRooms"),
+            it.optString("email").takeIf { v -> !it.isNull("email") && v.isNotBlank() }, it.optString("phone").takeIf { v -> !it.isNull("phone") && v.isNotBlank() })
+    }.sortedBy { it.start }
+
+    /** School news come as HTML; the app shows text. Pure, so the JVM test covers it. */
+    fun html(s: String): String = s
+        .replace(Regex("(?i)<br\\s*/?>|</p>|</div>|</li>"), "\n")
+        .replace(Regex("<[^>]+>"), "")
+        .replace("&nbsp;", " ").replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'")
+        .replace(Regex("&#(\\d+);")) { m -> m.groupValues[1].toIntOrNull()?.let { String(Character.toChars(it)) } ?: "" }
+        .lines().map { it.trim() }.joinToString("\n").replace(Regex("\n{3,}"), "\n\n").trim()
+}
