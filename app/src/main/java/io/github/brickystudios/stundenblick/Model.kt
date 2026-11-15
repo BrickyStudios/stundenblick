@@ -55,7 +55,6 @@ data class Period(
     val substText: String = "",
     val info: String = "",
     val exam: String? = null,
-    val color: String? = null,
     /** the period ids a double-lesson block stands for (empty: just [id]) */
     val parts: List<Long> = emptyList(),
     /** not from Untis: the school does not show this day yet, so Derive.project filled it from an earlier week */
@@ -167,7 +166,6 @@ object Parse {
             substText = text?.optString("substitution").orEmpty(),
             info = text?.optString("info").orEmpty(),
             exam = p.optJSONObject("exam")?.let { listOf(it.optString("examtype"), it.optString("name")).filter(String::isNotBlank).joinToString(" ").ifBlank { "Klausur" } },
-            color = color(p),
         )
     }.sortedBy { it.start }
 

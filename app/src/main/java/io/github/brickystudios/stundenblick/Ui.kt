@@ -59,6 +59,18 @@ fun StundenblickTheme(content: @Composable () -> Unit) {
 /** Untis colors are "#ffff80"-style; null or broken means no stripe. */
 fun untisColor(hex: String?): Color? = runCatching { hex?.let { Color(android.graphics.Color.parseColor(it)) } }.getOrNull()
 
+/** for schools whose subjects carry no colour: one of these per subject, the same every time */
+private val subjectFallback = listOf(0xFFC2603E, 0xFF3F7CAC, 0xFF8A6FB0, 0xFF5E8C4A, 0xFFB5852B, 0xFFB0566F, 0xFF4F8F8A, 0xFF7A6A58).map { Color(it) }
+
+/**
+ * The stripe colour of a period: its subject's colour from the master data. Not the period's own backColor,
+ * which real schools fill with one lesson colour for every period (the yellow #f49f25).
+ */
+fun Master?.subjectColor(p: Period): Color? {
+    val id = p.subjectId ?: return null
+    return untisColor(this?.find(Kind.SUBJECT, id)?.color) ?: subjectFallback[id.mod(subjectFallback.size.toLong()).toInt()]
+}
+
 /** Small label for a change: "Entfall", "Vertretung", "Klausur" … */
 @Composable
 fun Tag(text: String, color: Color, modifier: Modifier = Modifier) {

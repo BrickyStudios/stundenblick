@@ -334,7 +334,7 @@ private fun accentOf(p: Period): Color? {
 private fun Cell(p: Period, master: Master?, wide: Boolean, isNew: Boolean, onHide: (Period) -> Unit, onTap: (Period) -> Unit) {
     val s = LocalSignals.current
     val accent = accentOf(p)
-    val stripe = untisColor(p.color) ?: MaterialTheme.colorScheme.outline
+    val stripe = master.subjectColor(p) ?: MaterialTheme.colorScheme.outline
     val shape = RoundedCornerShape(7.dp)
     val subject = master.subject(p)
     val room = p.of(Kind.ROOM).joinToString(",") { master.name(it) }
@@ -402,7 +402,7 @@ private fun PeriodRow(p: Period, master: Master?, element: Element, isNew: Boole
             Text(hm.format(p.start), fontSize = 12.sp, color = s.muted)
             Text(hm.format(p.end), fontSize = 12.sp, color = s.muted)
         }
-        Box(Modifier.width(3.dp).height(44.dp).background(untisColor(p.color) ?: MaterialTheme.colorScheme.outline, RoundedCornerShape(2.dp)))
+        Box(Modifier.width(3.dp).height(44.dp).background(master.subjectColor(p) ?: MaterialTheme.colorScheme.outline, RoundedCornerShape(2.dp)))
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(master.subject(p, long = true), fontSize = 16.sp, fontWeight = FontWeight.SemiBold,

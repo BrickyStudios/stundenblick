@@ -101,7 +101,7 @@ object Demo {
             periods.put(
                 JSONObject().put("id", day.toEpochDay() * 10_000 + i).put("lessonId", k * 10_000 + s * 100 + t)
                     .put("startDateTime", "${day}T$a" + "Z").put("endDateTime", "${day}T$b" + "Z")
-                    .put("backColor", subjects.first { it.first == s }.second.third)
+                    .put("backColor", "#f49f25") // like real schools: one lesson colour for all, the subject colour is in the master data
                     .put("text", JSONObject().put("lesson", "").put("substitution", subst).put("info", if (exam != null) "Hilfsmittel: Taschenrechner" else ""))
                     .put("elements", JSONArray(listOf(
                         JSONObject().put("type", "CLASS").put("id", k).put("orgId", k),
