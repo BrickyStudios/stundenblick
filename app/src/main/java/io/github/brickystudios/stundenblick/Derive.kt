@@ -128,4 +128,38 @@ object Derive {
         val free = master.units.firstOrNull { u -> u.start.isAfter(t) && day.none { it.start.toLocalTime() < u.end && it.end.toLocalTime() > u.start } }
         return RoomState(busy, null, free?.start)
     }
+
+    // ---- the whole school (from all class plans): which rooms are free, who is where
+
+    private fun overlaps(p: Period, u: Slot) = p.start.toLocalTime() < u.end && p.end.toLocalTime() > u.start
+
+    /** the unit running at [t], else the next one, else the last */
+    fun slotIndex(units: List<Slot>, t: LocalTime): Int =
+        units.indexOfFirst { t < it.end }.takeIf { it >= 0 } ?: (units.size - 1).coerceAtLeast(0)
+
+    /** rooms that appear in any lesson of the week: teaching rooms, without staff room or office */
+    fun teachingRooms(all: List<Period>, master: Master): List<Element> {
+        val used = all.flatMap { it.of(Kind.ROOM) }.flatMap { listOf(it.id, it.orgId) }.toSet()
+        return master.elements[Kind.ROOM].orEmpty().filter { it.id in used }
+    }
+
+    data class FreeRoom(val room: Element, val until: LocalTime?, val freedBy: String?)
+
+    fun freeRooms(all: List<Period>, rooms: List<Element>, day: LocalDate, unit: Slot, units: List<Slot>): List<FreeRoom> {
+        val dayPs = all.filter { it.start.toLocalDate() == day }
+        fun busyIn(u: Slot) = dayPs.filter { !it.cancelled && overlaps(it, u) }.flatMap { it.of(Kind.ROOM) }.map { it.id }.toSet()
+        val busy = busyIn(unit)
+        val cancelled = dayPs.filter { it.cancelled && overlaps(it, unit) }.flatMap { it.of(Kind.ROOM) }.flatMap { listOf(it.id, it.orgId) }.toSet()
+        val movedAway = dayPs.filter { !it.cancelled && overlaps(it, unit) }.flatMap { it.of(Kind.ROOM) }.filter { it.changed }.map { it.orgId }.toSet()
+        val later = units.filter { it.start >= unit.end }
+        return rooms.filter { it.id !in busy }.map { r ->
+            val until = later.firstOrNull { u -> r.id in busyIn(u) }?.start
+            FreeRoom(r, until, when (r.id) { in cancelled -> "durch Entfall frei"; in movedAway -> "Unterricht verlegt"; else -> null })
+        }.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.room.name })
+    }
+
+    /** every lesson in [unit], once (a lesson of several classes appears in each class plan) */
+    fun lessonsAt(all: List<Period>, day: LocalDate, unit: Slot): List<Period> =
+        all.filter { it.start.toLocalDate() == day && overlaps(it, unit) }.distinctBy { it.id }
 }
+

@@ -11,7 +11,7 @@ import java.io.File
 import java.time.LocalDate
 
 /** One loaded week of one timetable. periods == null: nothing cached and not loaded yet. */
-data class Week(val periods: List<Period>?, val fetchedAt: Long, val loading: Boolean, val error: String?)
+data class Week(val periods: List<Period>?, val fetchedAt: Long, val loading: Boolean, val error: String?, val code: Int? = null)
 
 /**
  * App-wide data: profile, master data, cached weeks, preferences. Files live in the app's private storage
@@ -169,7 +169,14 @@ class Repo private constructor(ctx: Context) {
                 val fresh = Parse.periods(r)
                 if (own.value?.key == e.key) record(cached.periods, fresh, e)
                 Week(fresh, now, false, null)
-            }.getOrElse { Week(cached.periods, cached.fetchedAt, false, Errors.explain(it)) }
+            }.getOrElse { err ->
+                val code = (err as? UntisException)?.code
+                // a room or teacher plan the school does not hand out: put it together from the class plans already loaded
+                val derived = if (code == -8509 && (e.kind == Kind.ROOM || e.kind == Kind.TEACHER)) schoolPeriods(monday)
+                    ?.filter { p -> p.refs.any { it.kind == e.kind && (it.id == e.id || it.orgId == e.id) } } else null
+                if (!derived.isNullOrEmpty()) Week(derived, System.currentTimeMillis(), false, "Aus den Klassenplänen zusammengesetzt.", code)
+                else Week(cached.periods, cached.fetchedAt, false, Errors.explain(err), code)
+            }
         }
         if (own.value?.key == e.key) {
             DayWidget.update(app)
@@ -275,6 +282,50 @@ class Repo private constructor(ctx: Context) {
         homeworkDone.value = next
     }
 
+    // ---- the whole school: every class plan of the week, loaded on request, sequentially and gently
+    data class SchoolState(val done: Int = 0, val total: Int = 0, val running: Boolean = false, val refused: Boolean = false)
+
+    val school = mutableStateOf(SchoolState())
+    @Volatile private var stopSchool = false
+    fun cancelSchool() { stopSchool = true }
+    /** true once the user loaded the school at least once: from then on the tab loads by itself (cache 6 h) */
+    fun schoolOptedIn() = prefs.contains("schoolDay")
+
+    suspend fun loadSchool(monday: LocalDate, force: Boolean = false) {
+        val classes = master.value?.elements?.get(Kind.CLASS).orEmpty()
+        if (classes.isEmpty() || school.value.running) return
+        stopSchool = false
+        school.value = SchoolState(0, classes.size, running = true)
+        var refused = 0
+        var ok = 0
+        try {
+            for ((i, c) in classes.withIndex()) {
+                if (stopSchool) break
+                val t0 = System.currentTimeMillis()
+                load(c, monday, force, maxAgeMs = 6 * 3600_000L)
+                val w = weeks[weekKey(c, monday)]
+                if (w?.code == -8509) refused++ else if (w?.periods != null) ok++
+                school.value = school.value.copy(done = i + 1)
+                if (ok == 0 && refused >= 3) { school.value = school.value.copy(refused = true); break } // the school hides other classes
+                if (w != null && (w.fetchedAt >= t0 || w.error != null)) kotlinx.coroutines.delay(100) // space out network requests only
+            }
+        } finally {
+            // also when the tab is left mid-load: the coroutine is cancelled, the state must not stay "running"
+            if (ok > 0) prefs.edit().putString("schoolDay", LocalDate.now().toString()).apply()
+            school.value = school.value.copy(running = false)
+        }
+    }
+
+    /** how many class plans of the week are in memory */
+    fun schoolLoaded(monday: LocalDate) = master.value?.elements?.get(Kind.CLASS).orEmpty().count { weeks[weekKey(it, monday)]?.periods != null }
+
+    /** all lessons of the week in the loaded class plans, null before anything was loaded; [disk] off for the UI thread */
+    fun schoolPeriods(monday: LocalDate, disk: Boolean = true): List<Period>? {
+        val classes = master.value?.elements?.get(Kind.CLASS).orEmpty()
+        val all = classes.mapNotNull { c -> weeks[weekKey(c, monday)]?.periods ?: if (disk) cachedPeriods(c, monday) else null }
+        return if (all.isEmpty()) null else all.flatten().distinctBy { it.id }
+    }
+
     // ---- RoomFinder (J2): rooms the user picked, each week loaded at most once
     val rooms = mutableStateOf(prefs.getStringSet("rooms", emptySet())!!.mapNotNull { it.toLongOrNull() }.toSet())
     fun setRooms(ids: Set<Long>) {
@@ -368,6 +419,12 @@ class Repo private constructor(ctx: Context) {
         probe("Klausuren", ownOrNull) { Untis.exams(p, e!!.kind, e.id, today, year?.endInclusive?.takeIf { it > today } ?: today.plusDays(90)) }
         probe("Hausaufgaben", if (p.anonymous) "ohne Anmeldung nicht abgefragt" else ownOrNull) { Untis.homework(p, e!!.kind, e.id, today.minusDays(7), today.plusDays(28)) }
         probe("Nachricht des Tages") { Untis.messagesOfDay(p, today) }
+        // the Schule tab needs other classes' plans
+        val other = ud.getOrNull()?.optJSONObject("masterData")?.optJSONArray("klassen").objects().map { it.optLong("id") }.firstOrNull { it != klasse && it != e?.id }
+        probe("Andere Klassen", if (other == null) "keine andere Klasse" else null) {
+            val r = timetable(p, Kind.CLASS, other!!, monday)
+            org.json.JSONObject().put("periods", r.getJSONObject("timetable").optJSONArray("periods"))
+        }
         probe("Sprechstunden", if (klasse == null) "keine Klasse" else null) { Untis.officeHours(p, klasse!!, today) }
         probe("Fehlzeiten", if (p.anonymous) "ohne Anmeldung nicht abgefragt" else null) { Untis.absences(p, year?.start ?: today.minusDays(90), today) }
         var firstId: Long? = null

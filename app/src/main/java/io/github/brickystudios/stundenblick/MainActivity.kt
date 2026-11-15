@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -151,7 +152,7 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                    listOf(Triple("heute", "Heute", Icons.Default.Home), Triple("plan", "Plan", Icons.Default.DateRange), Triple("mehr", "Mehr", Icons.Default.Menu))
+                    listOf(Triple("heute", "Heute", Icons.Default.Home), Triple("plan", "Plan", Icons.Default.DateRange), Triple("schule", "Schule", Icons.Default.LocationOn), Triple("mehr", "Mehr", Icons.Default.Menu))
                         .forEach { (id, label, icon) ->
                             val count = if (id == "mehr") repo.history.value.count { !it.seen } else 0
                             NavigationBarItem(
@@ -168,6 +169,7 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
                 when {
                     tab == "heute" -> HeuteScreen(repo, onOpenPlan = { own?.let(::show) }, onHistory = { screen = Screen.HISTORY }, onSetOwn = { screen = Screen.PICK_OWN },
                         onInfo = { infoKind = it; screen = Screen.INFO })
+                    tab == "schule" -> SchoolScreen(repo, onOpen = ::show, onRooms = { screen = Screen.ROOMS })
                     tab == "mehr" -> MehrScreen(repo, onHistory = { screen = Screen.HISTORY }, onRooms = { screen = Screen.ROOMS }, onSettings = { screen = Screen.SETTINGS },
                         onInfo = { infoKind = it; screen = Screen.INFO })
                     shown == null -> OwnMissing(profile, onSetOwn = { screen = Screen.PICK_OWN }, onPick = { screen = Screen.PICK }, onSettings = { screen = Screen.SETTINGS })

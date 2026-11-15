@@ -96,4 +96,35 @@ class DeriveTest {
         val free = Derive.roomState(a101, at(0, 14, 10), master)
         assertNull(free.busy)
     }
+
+    private fun school(): List<Period> = listOf(1L, 2L, 3L).flatMap { Parse.periods(Demo.timetable(Kind.CLASS, it, monday)) }
+
+    @Test fun slotIndexPicksRunningOrNext() {
+        assertEquals(0, Derive.slotIndex(master.units, LocalTime.of(7, 0)))
+        assertEquals(2, Derive.slotIndex(master.units, LocalTime.of(9, 40)))
+        assertEquals(master.units.size - 1, Derive.slotIndex(master.units, LocalTime.of(18, 0)))
+    }
+
+    @Test fun freeRoomsFromAllClassPlans() {
+        val all = school()
+        val rooms = Derive.teachingRooms(all, master)
+        assertTrue("Aula is used once a week", rooms.any { it.name == "Aula" })
+        val third = master.units[2]
+        // Tuesday 3rd lesson: Q2's Ge in B205 is cancelled, so B205 is free by cancellation
+        val tue = Derive.freeRooms(all, rooms, monday.plusDays(1), third, master.units)
+        assertEquals("durch Entfall frei", tue.single { it.room.name == "B205" }.freedBy)
+        // Thursday 1st: Q2's German moved from A101 to the Aula, and 7a's maths in A101 is the only other user
+        val thu = Derive.freeRooms(all, rooms, monday.plusDays(3), master.units[0], master.units)
+        assertTrue(thu.none { it.room.name == "Aula" })
+        // a room busy later today says until when
+        val mon = Derive.freeRooms(all, rooms, monday, master.units[0], master.units)
+        val nw1 = mon.single { it.room.name == "NW1" }
+        assertEquals(LocalTime.of(9, 55), nw1.until)
+    }
+
+    @Test fun lessonsAtCountsSharedLessonsOnce() {
+        val l = Derive.lessonsAt(school(), monday, master.units[0])
+        assertEquals(l.size, l.map { it.id }.toSet().size)
+        assertTrue(l.size >= 3)
+    }
 }

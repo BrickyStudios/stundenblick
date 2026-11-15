@@ -38,7 +38,9 @@
 - **Jeder freigegebene Plan:** eigene Klasse, andere Klassen, Lehrkräfte, Räume, Fächer, mit Suche und Favoriten. Über fremden Plänen steht, wo die Lehrkraft oder Klasse gerade ist. Namen in den Details öffnen deren Plan.
 - **Änderungen auf einen Blick:** Entfall rot und durchgestrichen, Vertretung und Raumänderung orange mit dem alten Namen daneben, Klausur blau, Zusatzstunde hellblau, neue Änderungen mit Punkt markiert.
 - **Woche oder Tag:** Wochenraster mit Doppelstunden als Block, Jetzt-Linie und Kursnamen; Tagesliste mit Pausen und Freistunden.
-- **Raumfinder** wie bei BetterUntis: Räume wählen und sehen, ob sie jetzt frei sind und bis wann.
+- **Schule auf einen Blick:** alle freien Räume einer Stunde, bis wann sie frei sind und ob sie durch Entfall frei wurden, dazu wer wo Unterricht hat, durchsuchbar nach Klasse, Kurs, Lehrkraft oder Raum. Gibt die Schule Raum- oder Lehrkraftpläne nicht frei, setzt die App sie aus den Klassenplänen zusammen.
+- **Raumfinder** wie bei BetterUntis: einzelne Räume wählen und sehen, ob sie jetzt frei sind und bis wann.
+- **Info Center** wie bei BetterUntis: Klausuren, Hausaufgaben zum Abhaken, Nachricht des Tages, Sprechstunden mit Mail und Telefon, eigene Fehlzeiten. Was die Schule nicht freigibt, taucht nicht auf.
 - **Pausen-Info** wie bei BetterUntis: in jeder Pause still die nächste Stunde mit Raum.
 - **Stunden-Details:** Stundeninhalt, Hausaufgaben und Infotext, soweit die Schule sie einträgt.
 - **Kurse ausblenden:** in den Einstellungen oder per langem Druck auf eine Stunde, mit Rückgängig.
@@ -58,12 +60,13 @@
 2. Anmelden, am besten per QR-Code: WebUntis im Browser öffnen → Profil → Freigaben → „Anzeigen“. Den QR-Code mit der Kamera-App scannen, sie öffnet Stundenblick. Das klappt auch mit Zwei-Faktor-Anmeldung und mit IServ-Konten.
 3. Alternativ die Schule suchen und mit Benutzername und Passwort anmelden, oder ohne Anmeldung, falls deine Schule öffentliche Pläne hat.
 
-**Stand 0.10:** Demo, Schulsuche, anonymer Zugang und alle Ansichten sind auf dem Emulator gegen eine echte Schule getestet. Anmeldung mit echtem Konto (QR, Passwort, 2FA) ist noch nicht getestet. Wenn etwas hakt: Einstellungen → Verbindungstest → Kopieren und als [Issue](https://github.com/BrickyStudios/stundenblick/issues) einreichen.
+**Stand 0.11:** Demo, Schulsuche, anonymer Zugang und alle Ansichten sind auf dem Emulator getestet, die Anmeldung per QR-Code mit einem echten Schulkonto (Microsoft-Anmeldung) ebenfalls. Passwort- und 2FA-Anmeldung sind noch nicht mit echten Konten getestet. Wenn etwas hakt: Einstellungen → Verbindungstest → Kopieren und als [Issue](https://github.com/BrickyStudios/stundenblick/issues) einreichen.
 
 ## Datenschutz
 
 - Kein eigener Server, kein Konto, kein Tracking.
 - Die App spricht nur mit dem WebUntis-Server deiner Schule und, für Updates, mit GitHub. Die Update-Prüfung lässt sich abschalten.
+- Die Ansicht „Schule“ lädt die Klassenpläne erst, wenn du es antippst: eine Anfrage pro Klasse, danach 6 Stunden aus dem Speicher.
 - Dein Passwort wird nicht gespeichert, nur der Zugangsschlüssel, den Untis dafür ausgibt. Er liegt im privaten App-Speicher und ist von Backups ausgenommen.
 
 ## Selbst bauen

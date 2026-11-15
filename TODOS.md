@@ -4,15 +4,9 @@ Verbindliche Spezifikation: `~/.gstack/projects/BrickyStudios-stundenblick/plans
 
 ## Vor v1.0
 
-- **Test mit echtem Konto:** QR-Code scannen, eigene Woche, Stunden-Details, Verbindungstest kopieren.
+- **Ansicht „Schule“ an der eigenen Schule prüfen:** Gibt die Schule andere Klassen frei? Wie lange dauert das Laden aller Klassen? Stimmen die freien Räume mit dem Flur überein?
 - **K13-Tor:** Lädt der eigene Plan mit Konto nicht (BetterUntis #503), kommt der REST-Fallback vor allem anderen.
 - **Signierschlüssel sichern:** `~/.config/stundenblick/` auf den USB-Stick. Ohne Schlüssel keine Updates.
-
-## Welle B (nach den Verbindungstest-Daten echter Konten)
-
-- **Info Center** wie bei BetterUntis: Klausuren, Hausaufgaben (lokal abhakbar), Nachricht des Tages (bei Öffnen nach 2 h neu), Sprechstunden mit Mail/Telefon, eigene Fehlzeiten. Je Endpunkt einmal pro Tag, „kein Recht“ blendet aus.
-- **Heute-Karten** für nächste Klausur, Hausaufgaben bis morgen, Nachricht des Tages; neue Klausuren im Verlauf; nächste Klausur im Widget.
-- **Widget** auf `nextSchoolDay` umstellen, Ferien-Text.
 
 ## Danach
 
@@ -22,7 +16,7 @@ Verbindliche Spezifikation: `~/.gstack/projects/BrickyStudios-stundenblick/plans
 
 ## Später
 
-Stummschalten im Unterricht, mehrere Profile, Tag teilen (mit Vertrieb neu bewerten), REST-Posteingang, ICS-Export, gemeinsame Freistunden.
+Schule: freie Räume für den ganzen Tag als Raster, Lehrkraft-Suche „wo ist X gerade“ auf der Heute-Seite. Stummschalten im Unterricht, mehrere Profile, Tag teilen (mit Vertrieb neu bewerten), REST-Posteingang, ICS-Export, gemeinsame Freistunden.
 
 ## Gestrichen
 
