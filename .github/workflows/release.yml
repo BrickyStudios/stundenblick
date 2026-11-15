@@ -57,7 +57,8 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.value }}
           name: Stundenblick ${{ steps.tag.outputs.value }}
-          prerelease: ${{ startsWith(steps.tag.outputs.value, 'v0.') }}
+          # never a prerelease: releases/latest (download button, updater) skips prereleases
+          prerelease: false
           body: |
             `Stundenblick.apk`: Android 8.0 oder neuer, läuft ohne Google-Dienste (auch GrapheneOS). Updates kommen über die App selbst (abschaltbar) oder über Obtainium.
           files: out/Stundenblick.apk
