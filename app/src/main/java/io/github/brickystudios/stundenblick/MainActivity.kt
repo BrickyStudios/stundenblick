@@ -111,7 +111,7 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
 
     LaunchedEffect(profile) {
         if (profile != null) {
-            ChangeJob.schedule(ctx, repo.notify) // heals a switch that is on without its job (e.g. after an update)
+            ChangeJob.schedule(ctx, repo.notify || repo.alarm) // heals a switch that is on without its job (e.g. after an update)
             BreakInfo.schedule(ctx)
             repo.refreshMaster()
             if (repo.updates) Updater.check(ctx, manual = false)

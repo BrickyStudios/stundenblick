@@ -109,6 +109,29 @@ class RulesTest {
         assertTrue(Changes.between(withoutExtra, now, master, emptySet()).single().second.contains("Zusatzstunde"))
     }
 
+    @Test fun examOverSeveralLessonsIsOneMessage() {
+        val now = q2()
+        val before = now.map { if (it.isExam) it.copy(states = setOf("REGULAR"), exam = null) else it }
+        assertEquals(1, Changes.between(before, now, master, emptySet()).size)
+    }
+
+    @Test fun alarmRingsOnCancelFoyerAndEva() {
+        val now = q2()
+        val m = master.copy(elements = master.elements + (Kind.ROOM to master.elements[Kind.ROOM].orEmpty() + Element(Kind.ROOM, 999, "Foyer")))
+        val normal = now.map { if (it.cancelled) it.copy(states = setOf("REGULAR")) else it }
+        assertTrue("first run fills the cache only", Alarm.between(null, now, m, emptySet()).isEmpty())
+        assertEquals("cancelled", now.single { it.cancelled }.id, Alarm.between(normal, now, m, emptySet()).single().id)
+        assertTrue("nothing new", Alarm.between(now, now, m, emptySet()).isEmpty())
+        assertTrue("hidden subject stays quiet", Alarm.between(normal, now, m, setOf(26L)).isEmpty())
+        val p = normal.first { !it.special }
+        fun with(q: Period) = normal.map { if (it.id == p.id) q else it }
+        val room = p.of(Kind.ROOM).first()
+        assertEquals("moved to the foyer", 1, Alarm.between(normal, with(p.copy(refs = p.refs - room + Ref(Kind.ROOM, 999, room.id))), m, emptySet()).size)
+        assertEquals("EVA", 1, Alarm.between(normal, with(p.copy(substText = "EVA")), m, emptySet()).size)
+        assertEquals("written out", 1, Alarm.between(normal, with(p.copy(info = "Eigenverantwortliches Arbeiten")), m, emptySet()).size)
+        assertTrue("a teacher called Eva is no alarm", Alarm.between(normal, with(p.copy(substText = "Vertretung Frau Eva")), m, emptySet()).isEmpty())
+    }
+
     @Test fun describeNamesSubstituteAndRoom() {
         val ps = q2()
         val sub = ps.single { it.start == monday.plusDays(2).atTime(9, 55) }

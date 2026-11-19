@@ -101,7 +101,7 @@ object Changes {
         return Filter.apply(new, hidden).filter { p ->
             val o = before[p.id]
             if (o == null) p.special else signature(o) != signature(p) && (p.special || o.special)
-        }.map { it.id to describe(it, master) }
+        }.distinctBy { if (it.isExam && !it.cancelled) Derive.examKey(it) else it.id }.map { it.id to describe(it, master) }
     }
 
     fun when_(p: Period, master: Master): String {
@@ -126,6 +126,26 @@ object Changes {
             }
         }
         return when_(p, master) + ": " + what
+    }
+}
+
+/** The loud alarm: a lesson that is now cancelled, in the foyer or EVA (eigenverantwortliches Arbeiten) and was not before. */
+object Alarm {
+    private val eva = Regex("""\bEVA\b""") // capitals only: a teacher called Eva is no alarm
+
+    fun matches(p: Period, master: Master): Boolean {
+        if (p.cancelled) return true
+        val names = p.refs.flatMap { r -> master.find(r.kind, r.id)?.let { listOf(it.name, it.longName) }.orEmpty() }
+        return (names + p.lessonText + p.substText + p.info).any { t ->
+            eva.containsMatchIn(t) || t.contains("eigenverantwortlich", ignoreCase = true) || t.contains("foyer", ignoreCase = true)
+        }
+    }
+
+    /** old == null means first run: fill the cache, ring nothing. */
+    fun between(old: List<Period>?, new: List<Period>, master: Master, hidden: Set<Long>): List<Period> {
+        if (old == null) return emptyList()
+        val before = old.associateBy { it.id }
+        return Filter.apply(new, hidden).filter { p -> matches(p, master) && before[p.id]?.let { !matches(it, master) } ?: true }
     }
 }
 

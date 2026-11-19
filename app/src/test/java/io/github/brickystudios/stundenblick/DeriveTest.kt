@@ -59,6 +59,16 @@ class DeriveTest {
         assertEquals("the double exam counts once", 1, c.exams)
     }
 
+    @Test fun longExamCountsOnceAcrossBreaks() {
+        // a five-hour exam spans two breaks and replaces different courses, but has one title
+        val fri = monday.plusDays(4)
+        val five = q2.filter { it.start.toLocalDate() == fri }.sortedBy { it.start }.take(5).map { it.copy(states = setOf("EXAM"), exam = "Klausur M-LK 2") }
+        val week = q2.filter { it.start.toLocalDate() != fri } + five
+        assertEquals(1, Derive.weekCount(Derive.blocks(week)).exams)
+        val other = week.first { it.start.toLocalDate() == monday }.copy(states = setOf("EXAM"), exam = "Klausur E-GK 1")
+        assertEquals("another day, another exam", 2, Derive.weekCount(Derive.blocks(week + other)).exams)
+    }
+
     @Test fun nowAndNext() {
         val blocks = Derive.blocks(q2)
         val inMath = Derive.now(blocks, at(0, 8, 30))

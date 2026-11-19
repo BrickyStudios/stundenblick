@@ -32,6 +32,9 @@ class Repo private constructor(ctx: Context) {
     var notify: Boolean
         get() = prefs.getBoolean("notify", false)
         set(v) = prefs.edit().putBoolean("notify", v).apply()
+    var alarm: Boolean
+        get() = prefs.getBoolean("alarm", false)
+        set(v) = prefs.edit().putBoolean("alarm", v).apply()
     var breakInfo: Boolean
         get() = prefs.getBoolean("breakInfo", false)
         set(v) = prefs.edit().putBoolean("breakInfo", v).apply()
@@ -388,6 +391,9 @@ class Repo private constructor(ctx: Context) {
         val m = master.value ?: return emptyList()
         val today = LocalDate.now()
         fun window(ps: List<Period>) = ps.filter { !it.start.toLocalDate().isBefore(today) && it.start.toLocalDate().isBefore(today.plusDays(14)) }
+        // here, not in the hourly job: the app's own refresh also writes the cache, and a change it sees first must ring too
+        if (alarm) Alarm.between(old?.let(::window), window(fresh), m, hidden(e)).filter { it.end.isAfter(java.time.LocalDateTime.now()) }
+            .takeIf { it.isNotEmpty() }?.let { ps -> ChangeJob.ring(app, ps.map { Changes.describe(it, m) }) }
         val found = Changes.between(old?.let(::window), window(fresh), m, hidden(e))
         if (found.isEmpty()) return emptyList()
         synchronized(historyLock) {

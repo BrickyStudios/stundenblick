@@ -76,12 +76,17 @@ object Derive {
         val any get() = cancelled + substituted + roomChanged + exams > 0
     }
 
-    /** Counts per block; a cancellation counts only as a cancellation. */
-    fun weekCount(periods: List<Period>) = periods.fold(WeekCount(0, 0, 0, 0)) { c, p ->
-        if (p.cancelled) c.copy(cancelled = c.cancelled + 1) else c.copy(
-            substituted = c.substituted + if (p.of(Kind.TEACHER).any { it.changed }) 1 else 0,
-            roomChanged = c.roomChanged + if (p.of(Kind.ROOM).any { it.changed }) 1 else 0,
-            exams = c.exams + if (p.isExam) 1 else 0,
+    /** One exam = one day and one title (the subject if Untis sends none), however many lessons and breaks it spans. */
+    fun examKey(p: Period): Any = p.start.toLocalDate() to (p.exam ?: p.subjectId)
+
+    /** Counts per block; a cancellation counts only as a cancellation, a long exam only once. */
+    fun weekCount(periods: List<Period>): WeekCount {
+        val held = periods.filter { !it.cancelled }
+        return WeekCount(
+            cancelled = periods.size - held.size,
+            substituted = held.count { p -> p.of(Kind.TEACHER).any { it.changed } },
+            roomChanged = held.count { p -> p.of(Kind.ROOM).any { it.changed } },
+            exams = held.filter { it.isExam }.distinctBy(::examKey).size,
         )
     }
 

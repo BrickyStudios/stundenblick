@@ -69,7 +69,13 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         notify = granted
         repo.notify = granted
-        ChangeJob.schedule(ctx, granted)
+        ChangeJob.schedule(ctx, granted || repo.alarm)
+    }
+    var alarm by remember { mutableStateOf(repo.alarm) }
+    val askAlarm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        alarm = granted
+        repo.alarm = granted
+        ChangeJob.schedule(ctx, granted || repo.notify)
     }
 
     Scaffold(
@@ -129,10 +135,23 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
                     Text("Bei Ausfall, Vertretung, Raumänderung und Klausur im eigenen Plan melden", Modifier.weight(1f), fontSize = 15.sp)
                     Switch(notify, { on ->
                         if (on && Build.VERSION.SDK_INT >= 33) ask.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        else { notify = on; repo.notify = on; ChangeJob.schedule(ctx, on) }
+                        else { notify = on; repo.notify = on; ChangeJob.schedule(ctx, on || repo.alarm) }
                     }, enabled = repo.own.value != null)
                 }
                 Text("Prüft einmal pro Stunde die nächsten 7 Tage, nur mit Netz.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+            }
+
+            Section("Alarm") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Lauter Alarm bei Entfall, Foyer oder EVA im eigenen Plan", Modifier.weight(1f), fontSize = 15.sp)
+                    Switch(alarm, { on ->
+                        if (on && Build.VERSION.SDK_INT >= 33) askAlarm.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        else { alarm = on; repo.alarm = on; ChangeJob.schedule(ctx, on || repo.notify) }
+                    }, enabled = repo.own.value != null)
+                }
+                Text("EVA heißt eigenverantwortliches Arbeiten. Klingelt wie ein Wecker, auch auf lautlos, bis du die Meldung antippst oder wegwischst. Prüft einmal pro Stunde, nur mit Netz.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                if (alarm) TextButton(onClick = { ChangeJob.ring(ctx, listOf("Probealarm: so klingt es bei Entfall, Foyer oder EVA.")) }) { Text("Probealarm") }
             }
 
             Section("Pausen-Info") {

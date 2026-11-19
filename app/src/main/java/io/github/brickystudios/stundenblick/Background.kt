@@ -15,6 +15,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.widget.RemoteViews
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -29,7 +31,7 @@ class ChangeJob : JobService() {
         thread(name = "stundenblick-changes") {
             val repo = Repo.get(this)
             val messages = runCatching { repo.checkChanges() }.getOrDefault(emptyList()) // offline: try again next hour, no false alarm
-            if (messages.isNotEmpty()) notifyChanges(this, messages)
+            if (messages.isNotEmpty() && repo.notify) notifyChanges(this, messages) // the job may run for the alarm alone
             DayWidget.update(this)
             BreakInfo.schedule(this)
             jobFinished(params, false)
@@ -74,6 +76,32 @@ class ChangeJob : JobService() {
                 .build()
             nm.notify(System.currentTimeMillis().toInt(), n)
         }
+
+        /** Rings like an alarm clock (alarm volume, also on silent) until the user taps, swipes it away or opens the shade. */
+        fun ring(ctx: Context, messages: List<String>) {
+            if (android.os.Build.VERSION.SDK_INT >= 33 && ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+            val nm = ctx.getSystemService(NotificationManager::class.java)
+            val sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+            nm.createNotificationChannel(NotificationChannel(ALARM, "Alarm bei Entfall, Foyer, EVA", NotificationManager.IMPORTANCE_HIGH).apply {
+                setSound(sound, AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
+                enableVibration(true)
+            })
+            val open = PendingIntent.getActivity(ctx, 3, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+            val n = Notification.Builder(ctx, ALARM)
+                .setSmallIcon(R.drawable.ic_stat)
+                .setContentTitle(if (messages.size == 1) "Stundenplan-Alarm" else "Stundenplan-Alarm: ${messages.size} Stunden")
+                .setContentText(messages.first())
+                .setStyle(Notification.BigTextStyle().bigText(messages.joinToString("\n")))
+                .setCategory(Notification.CATEGORY_ALARM)
+                .setContentIntent(open)
+                .setAutoCancel(true)
+                .build()
+            n.flags = n.flags or Notification.FLAG_INSISTENT // repeats the sound until the alarm is dealt with
+            nm.notify(ALARM_NOTE, n)
+        }
+
+        private const val ALARM = "alarm"
+        private const val ALARM_NOTE = 4712
     }
 }
 
