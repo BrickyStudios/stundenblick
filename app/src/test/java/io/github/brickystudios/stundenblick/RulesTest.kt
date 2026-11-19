@@ -130,10 +130,34 @@ class RulesTest {
         assertEquals("EVA", 1, Alarm.between(normal, with(p.copy(substText = "EVA")), m, emptySet()).size)
         assertEquals("written out", 1, Alarm.between(normal, with(p.copy(info = "Eigenverantwortliches Arbeiten")), m, emptySet()).size)
         assertTrue("a teacher called Eva is no alarm", Alarm.between(normal, with(p.copy(substText = "Vertretung Frau Eva")), m, emptySet()).isEmpty())
-        // how a real school writes EVA: teacher removed, room moved to the foyer, text in the substitution field
+    }
+
+    @Test fun alarmWaitsForItsHoursAndTheEndOfSchool() {
+        val day = monday.plusDays(3)
+        fun t(d: LocalDate, h: Int, m: Int = 0) = d.atTime(h, m)
+        val six = java.time.LocalTime.of(6, 0)
+        val ten = java.time.LocalTime.of(22, 0)
+        val school = { d: LocalDate -> if (d == day) t(day, 8)..t(day, 13, 20) else null }
+        val none = { _: LocalDate -> null }
+        assertEquals("night: at six", t(day, 6), Alarm.nextAllowed(t(day, 2), six, ten, none))
+        assertEquals("late evening: next morning", t(day.plusDays(1), 6), Alarm.nextAllowed(t(day, 23), six, ten, none))
+        assertEquals("before school: now", t(day, 7), Alarm.nextAllowed(t(day, 7), six, ten, school))
+        assertEquals("in school: when it ends", t(day, 13, 20), Alarm.nextAllowed(t(day, 10), six, ten, school))
+        assertEquals("school ends after the window: next morning", t(day.plusDays(1), 6), Alarm.nextAllowed(t(day, 10), six, java.time.LocalTime.of(13, 0), school))
+        assertEquals("same time twice: all day", t(day, 3), Alarm.nextAllowed(t(day, 3), six, six, none))
+        assertEquals("window over midnight", t(day, 18), Alarm.nextAllowed(t(day, 12), java.time.LocalTime.of(18, 0), java.time.LocalTime.of(7, 0), none))
+    }
+
+    @Test fun evaIsACancellation() {
+        // how a real school writes EVA: Untis keeps the lesson REGULAR, takes the teacher off and puts the text in
+        val p = q2().first { !it.special }
         val teacher = p.of(Kind.TEACHER).first()
-        val eva = p.copy(refs = p.refs - teacher - room + Ref(Kind.TEACHER, 0, teacher.id) + Ref(Kind.ROOM, 999, room.id), substText = "eigenverantwortliches Arbeiten")
-        assertTrue(Changes.describe(eva, m), Changes.describe(eva, m).endsWith(": eigenverantwortliches Arbeiten, Raum Foyer statt ${m.find(Kind.ROOM, room.id)?.name}"))
+        val eva = p.copy(refs = p.refs - teacher + Ref(Kind.TEACHER, 0, teacher.id), substText = "eigenverantwortliches Arbeiten")
+        assertTrue(eva.cancelled)
+        assertTrue(Changes.describe(eva, master), Changes.describe(eva, master).endsWith(" entfällt: eigenverantwortliches Arbeiten"))
+        assertFalse("team teaching: one teacher left, the lesson takes place", eva.copy(refs = eva.refs + Ref(Kind.TEACHER, 12, 12)).cancelled)
+        assertFalse("no teacher known at all is no cancellation", p.copy(refs = p.refs - teacher + Ref(Kind.TEACHER, 0, 0)).cancelled)
+        assertEquals("counts as Entfall in the week line", 1, Derive.weekCount(listOf(eva)).cancelled)
     }
 
     @Test fun describeNamesSubstituteAndRoom() {

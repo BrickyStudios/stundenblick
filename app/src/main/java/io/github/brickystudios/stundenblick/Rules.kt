@@ -6,6 +6,9 @@ import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.crypto.Mac
@@ -114,16 +117,15 @@ object Changes {
     fun describe(p: Period, master: Master): String {
         val subject = p.of(Kind.SUBJECT).firstOrNull()?.let { name(master, Kind.SUBJECT, it.id) } ?: p.lessonText.ifBlank { "Stunde" }
         val what = when {
-            p.cancelled -> "$subject entfällt"
+            p.cancelled -> "$subject entfällt" + p.substText.ifBlank { null }?.let { ": $it" }.orEmpty()
             p.isExam -> "$subject: ${p.exam ?: "Klausur"}"
             else -> {
                 val parts = mutableListOf<String>()
-                // no teacher plus a text is what schools write for EVA ("eigenverantwortliches Arbeiten", "Kurs hat Aufgaben")
-                p.of(Kind.TEACHER).filter { it.changed }.forEach { parts += if (it.id == 0L) p.substText.ifBlank { "Vertretung offen" } else "Vertretung " + name(master, Kind.TEACHER, it.id) }
+                p.of(Kind.TEACHER).filter { it.changed }.forEach { parts += "Vertretung " + (if (it.id == 0L) "offen" else name(master, Kind.TEACHER, it.id)) }
                 p.of(Kind.ROOM).filter { it.changed }.forEach { parts += "Raum ${name(master, Kind.ROOM, it.id)} statt ${name(master, Kind.ROOM, it.orgId)}" }
                 if (p.additional) parts += "Zusatzstunde"
                 if (parts.isEmpty()) parts += p.substText.ifBlank { "geändert" }
-                "$subject: " + parts.distinct().joinToString(", ")
+                "$subject: " + parts.joinToString(", ")
             }
         }
         return when_(p, master) + ": " + what
@@ -147,6 +149,25 @@ object Alarm {
         if (old == null) return emptyList()
         val before = old.associateBy { it.id }
         return Filter.apply(new, hidden).filter { p -> matches(p, master) && before[p.id]?.let { !matches(it, master) } ?: true }
+    }
+
+    /**
+     * The first moment from [now] on when the alarm may ring: inside the daily window [from]..[to] (from == to: all day,
+     * from > to: over midnight) and not between the first and the last lesson of that day ([school], null: no lessons/ignored).
+     */
+    fun nextAllowed(now: LocalDateTime, from: LocalTime, to: LocalTime, school: (LocalDate) -> ClosedRange<LocalDateTime>?): LocalDateTime {
+        var t = now
+        repeat(8) {
+            val c = t.toLocalTime()
+            val inWindow = from == to || if (from < to) c >= from && c < to else c >= from || c < to
+            val lessons = school(t.toLocalDate())
+            t = when {
+                !inWindow -> if (c < from) t.toLocalDate().atTime(from) else t.toLocalDate().plusDays(1).atTime(from)
+                lessons != null && t >= lessons.start && t < lessons.endInclusive -> lessons.endInclusive
+                else -> return t
+            }
+        }
+        return t
     }
 }
 

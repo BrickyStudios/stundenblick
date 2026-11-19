@@ -12,8 +12,8 @@ android {
         applicationId = "io.github.brickystudios.stundenblick"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.13.1"
+        versionCode = 8
+        versionName = "0.14.0"
         buildConfigField("String", "APK_NAME", "\"Stundenblick.apk\"")
     }
 

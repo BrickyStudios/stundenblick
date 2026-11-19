@@ -61,7 +61,11 @@ data class Period(
     val projected: Boolean = false,
 ) {
     val ids get() = parts.ifEmpty { listOf(id) }
-    val cancelled get() = "CANCELLED" in states
+    /**
+     * Untis' own cancellation, or EVA: every teacher taken off without a substitute. Untis keeps that REGULAR and the school
+     * writes "eigenverantwortliches Arbeiten", "Kurs hat Aufgaben" or "OneNote" into the text, but there is no lesson.
+     */
+    val cancelled get() = "CANCELLED" in states || of(Kind.TEACHER).let { t -> t.isNotEmpty() && t.all { it.id == 0L && it.changed } }
     val isExam get() = exam != null || "EXAM" in states
     val additional get() = "ADDITIONAL" in states
     /** substitution, room swap, moved lesson: anything Untis marks as not the normal plan */

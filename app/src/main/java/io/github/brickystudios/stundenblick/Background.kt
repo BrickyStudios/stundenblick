@@ -32,6 +32,7 @@ class ChangeJob : JobService() {
             val repo = Repo.get(this)
             val messages = runCatching { repo.checkChanges() }.getOrDefault(emptyList()) // offline: try again next hour, no false alarm
             if (messages.isNotEmpty() && repo.notify) notifyChanges(this, messages) // the job may run for the alarm alone
+            AlarmLater.fire(this) // re-arms a waiting alarm after a reboot
             DayWidget.update(this)
             BreakInfo.schedule(this)
             jobFinished(params, false)
@@ -102,6 +103,46 @@ class ChangeJob : JobService() {
 
         private const val ALARM = "alarm"
         private const val ALARM_NOTE = 4712
+    }
+}
+
+/**
+ * The alarm's waiting room: a change found outside the alarm's hours or during lessons rings once they allow it,
+ * if it still holds then and the lesson has not passed.
+ */
+class AlarmLater : android.content.BroadcastReceiver() {
+    override fun onReceive(ctx: Context, intent: Intent) = fire(ctx)
+
+    companion object {
+        fun fire(ctx: Context) {
+            val repo = Repo.get(ctx)
+            val am = ctx.getSystemService(android.app.AlarmManager::class.java)
+            val pi = PendingIntent.getBroadcast(ctx, 8, Intent(ctx, AlarmLater::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            am.cancel(pi)
+            val own = repo.own.value
+            val master = repo.master.value
+            val now = java.time.LocalDateTime.now()
+            val due = if (!repo.alarm || own == null || master == null) emptyList() else repo.alarmPending.mapNotNull { key ->
+                val id = key.substringBefore('|').toLongOrNull() ?: return@mapNotNull null
+                val start = runCatching { java.time.LocalDateTime.parse(key.substringAfter('|')) }.getOrNull() ?: return@mapNotNull null
+                repo.cachedPeriods(own, Parse.monday(start.toLocalDate()))?.let { Filter.apply(it, repo.hidden(own)) }?.firstOrNull { it.id == id }
+                    ?.takeIf { Alarm.matches(it, master) && it.end.isAfter(now) }?.let { key to it }
+            }
+            if (due.isEmpty()) { repo.alarmPending = emptySet(); return }
+            val at = Alarm.nextAllowed(now, java.time.LocalTime.of(repo.alarmFrom / 60, repo.alarmFrom % 60), java.time.LocalTime.of(repo.alarmTo / 60, repo.alarmTo % 60)) { d ->
+                if (!repo.alarmQuiet) null else BreakInfo.ownDay(repo, d).filter { !it.cancelled }.takeIf { it.isNotEmpty() }?.let { ps -> ps.minOf { it.start }..ps.maxOf { it.end } }
+            }
+            if (!at.isAfter(now)) {
+                repo.alarmPending = emptySet()
+                ChangeJob.ring(ctx, due.map { Changes.describe(it.second, master!!) })
+            } else {
+                repo.alarmPending = due.map { it.first }.toSet()
+                // on time like an alarm clock, also in Doze; without the exact-alarm right Android may ring up to an hour late
+                val ms = at.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                if (android.os.Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms()) am.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, ms, pi)
+                else am.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, ms, pi)
+            }
+        }
     }
 }
 
@@ -185,7 +226,7 @@ class BreakInfo : android.content.BroadcastReceiver() {
         private const val CHANNEL = "pause"
         private const val NOTE = 4711
 
-        private fun ownDay(repo: Repo, day: java.time.LocalDate): List<Period> {
+        fun ownDay(repo: Repo, day: java.time.LocalDate): List<Period> {
             val own = repo.own.value ?: return emptyList()
             val ps = repo.cachedPeriods(own, Parse.monday(day)) ?: return emptyList()
             return Derive.blocks(Filter.apply(ps, repo.hidden(own)).filter { it.start.toLocalDate() == day })

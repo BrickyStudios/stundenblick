@@ -7,6 +7,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- the alarm that waited for its hours rings on time; Android 13+ grants USE_EXACT_ALARM at install, 12 the other one -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
@@ -42,6 +45,10 @@
 
         <receiver
             android:name=".BreakInfo"
+            android:exported="false" />
+
+        <receiver
+            android:name=".AlarmLater"
             android:exported="false" />
 
         <receiver

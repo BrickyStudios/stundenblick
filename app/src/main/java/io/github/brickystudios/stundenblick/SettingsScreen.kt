@@ -151,7 +151,27 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
                 }
                 Text("EVA heißt eigenverantwortliches Arbeiten. Klingelt wie ein Wecker, auch auf lautlos, bis du die Meldung antippst oder wegwischst. Prüft einmal pro Stunde, nur mit Netz.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-                if (alarm) TextButton(onClick = { ChangeJob.ring(ctx, listOf("Probealarm: so klingt es bei Entfall, Foyer oder EVA.")) }) { Text("Probealarm") }
+                if (alarm) {
+                    var from by remember { mutableStateOf(repo.alarmFrom) }
+                    var to by remember { mutableStateOf(repo.alarmTo) }
+                    var quiet by remember { mutableStateOf(repo.alarmQuiet) }
+                    fun hm(m: Int) = "%02d:%02d".format(m / 60, m % 60)
+                    fun pick(start: Int, set: (Int) -> Unit) =
+                        android.app.TimePickerDialog(ctx, { _, h, m -> set(h * 60 + m); AlarmLater.fire(ctx) }, start / 60, start % 60, true).show()
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Nur von", fontSize = 15.sp)
+                        TextButton(onClick = { pick(from) { from = it; repo.alarmFrom = it } }) { Text(hm(from), fontSize = 17.sp) }
+                        Text("bis", fontSize = 15.sp)
+                        TextButton(onClick = { pick(to) { to = it; repo.alarmTo = it } }) { Text(hm(to), fontSize = 17.sp) }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Nicht während des Unterrichts", Modifier.weight(1f), fontSize = 15.sp)
+                        Switch(quiet, { quiet = it; repo.alarmQuiet = it; AlarmLater.fire(ctx) })
+                    }
+                    Text("Was außerhalb davon kommt, klingelt, sobald es wieder darf (nach der letzten Stunde oder morgens), falls es dann noch gilt. Gleiche Uhrzeit bei von und bis: rund um die Uhr.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                    TextButton(onClick = { ChangeJob.ring(ctx, listOf("Probealarm: so klingt es bei Entfall, Foyer oder EVA.")) }) { Text("Probealarm") }
+                }
             }
 
             Section("Pausen-Info") {
