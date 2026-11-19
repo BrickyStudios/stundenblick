@@ -130,6 +130,10 @@ class RulesTest {
         assertEquals("EVA", 1, Alarm.between(normal, with(p.copy(substText = "EVA")), m, emptySet()).size)
         assertEquals("written out", 1, Alarm.between(normal, with(p.copy(info = "Eigenverantwortliches Arbeiten")), m, emptySet()).size)
         assertTrue("a teacher called Eva is no alarm", Alarm.between(normal, with(p.copy(substText = "Vertretung Frau Eva")), m, emptySet()).isEmpty())
+        // how a real school writes EVA: teacher removed, room moved to the foyer, text in the substitution field
+        val teacher = p.of(Kind.TEACHER).first()
+        val eva = p.copy(refs = p.refs - teacher - room + Ref(Kind.TEACHER, 0, teacher.id) + Ref(Kind.ROOM, 999, room.id), substText = "eigenverantwortliches Arbeiten")
+        assertTrue(Changes.describe(eva, m), Changes.describe(eva, m).endsWith(": eigenverantwortliches Arbeiten, Raum Foyer statt ${m.find(Kind.ROOM, room.id)?.name}"))
     }
 
     @Test fun describeNamesSubstituteAndRoom() {

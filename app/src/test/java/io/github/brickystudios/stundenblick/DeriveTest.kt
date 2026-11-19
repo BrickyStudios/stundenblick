@@ -160,4 +160,29 @@ class DeriveTest {
         assertEquals(added.size, two.count { it.projected })
         assertTrue(two.filter { it.projected }.all { it.start.toLocalDate() > monday.plusDays(1) })
     }
+
+    private val lastFri = monday.minusWeeks(1).plusDays(4)
+    private fun kino(day: LocalDate) = Period(1, 9, day.atTime(9, 55), day.atTime(13, 20), listOf(Ref(Kind.CLASS, 3, 3), Ref(Kind.TEACHER, 12, 12)), setOf("IRREGULAR"), lessonText = "Kino")
+
+    @Test fun excursionHidesOnlyTheCancellationsItCovers() {
+        val fri = monday.plusDays(4)
+        val k = kino(fri)
+        val day = q2.filter { it.start.toLocalDate() == fri }.map { it.copy(states = setOf("CANCELLED"), exam = null) }
+        val under = day.count { it.start < k.end && k.start < it.end }
+        assertTrue("lessons under and outside the trip", under in 1 until day.size)
+        assertEquals(day.size - under + 1, Derive.withoutCovered(day + k).size)
+        val padTag = k.copy(refs = listOf(Ref(Kind.CLASS, 3, 3)))
+        assertEquals("Päd. Tag has no teacher: those cancellations are real", day.size + 1, Derive.withoutCovered(day + padTag).size)
+    }
+
+    @Test fun projectSkipsADayWithAnExcursion() {
+        val shown = q2.filter { it.start.toLocalDate() <= monday.plusDays(1) }
+        val k = kino(lastFri)
+        // as Untis sends it: the lessons under the trip cancelled, next to the trip
+        val one = Derive.withoutCovered(Parse.periods(Demo.timetable(Kind.CLASS, 3, monday.minusWeeks(1)))
+            .map { if (it.start < k.end && k.start < it.end) it.copy(states = setOf("CANCELLED")) else it } + k)
+        val two = Parse.periods(Demo.timetable(Kind.CLASS, 3, monday.minusWeeks(2)))
+        val fri = Derive.project(shown, monday, listOf(1L to one, 2L to two), monday, master).filter { it.projected && it.start.toLocalDate() == monday.plusDays(4) }
+        assertEquals("Friday comes from two weeks back, complete", two.count { it.start.toLocalDate() == lastFri.minusWeeks(1) && !it.additional }, fri.size)
+    }
 }

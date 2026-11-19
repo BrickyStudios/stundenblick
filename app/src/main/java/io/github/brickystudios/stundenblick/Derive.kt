@@ -76,6 +76,20 @@ object Derive {
         val any get() = cancelled + substituted + roomChanged + exams > 0
     }
 
+    /**
+     * An excursion or assembly: Untis cancels the lessons it covers and adds a period without subject but with the teachers
+     * who go along. Those cancellations are no free time, so they are dropped. A Päd. Tag has no teacher: its stay.
+     * shortcut: in a class plan an event of one course also hides the other courses' cancellations; exact for the own plan.
+     */
+    fun withoutCovered(periods: List<Period>): List<Period> {
+        val events = periods.filter(::isEvent)
+        if (events.isEmpty()) return periods
+        return periods.filterNot { p -> p.cancelled && events.any { e -> e.start < p.end && p.start < e.end } }
+    }
+
+    /** excursion, assembly, multi-course exam: no subject, but a teacher who supervises */
+    private fun isEvent(p: Period) = !p.cancelled && p.subjectId == null && p.of(Kind.TEACHER).any { it.id != 0L }
+
     /** One exam = one day and one title (the subject if Untis sends none), however many lessons and breaks it spans. */
     fun examKey(p: Period): Any = p.start.toLocalDate() to (p.exam ?: p.subjectId)
 
@@ -177,7 +191,7 @@ object Derive {
     }
 
     /**
-     * Fills each open day with the same weekday of the nearest earlier week that has lessons on it ([earlier]: weeks back to
+     * Fills each open day with the same weekday of the nearest earlier week that has lessons and no event on it ([earlier]: weeks back to
      * periods, nearest first), as the regular plan: a cancelled lesson or an exam counts as the normal lesson, a substitute or
      * room swap goes back to the original, extra and moved lessons are left out.
      * shortcut: A/B-week schools get the nearest week's pattern; compare two weeks back once such a school reports it.
@@ -185,7 +199,8 @@ object Derive {
     fun project(week: List<Period>, monday: LocalDate, earlier: List<Pair<Long, List<Period>?>>, today: LocalDate, master: Master?): List<Period> {
         val add = openDays(week, monday, today, master).flatMap { d ->
             earlier.firstNotNullOfOrNull { (back, ps) ->
-                ps?.filter { it.start.toLocalDate() == d.minusWeeks(back) }?.takeIf { it.isNotEmpty() }?.let { back to it }
+                // a day with an event lost the lessons it covers (withoutCovered), so it is no pattern: look one week further back
+                ps?.filter { it.start.toLocalDate() == d.minusWeeks(back) }?.takeIf { it.isNotEmpty() && it.none(::isEvent) }?.let { back to it }
             }?.let { (back, src) -> src.mapNotNull { regular(it, back) } }.orEmpty()
         }
         return if (add.isEmpty()) week else week + add

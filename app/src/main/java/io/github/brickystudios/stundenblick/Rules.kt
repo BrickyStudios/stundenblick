@@ -118,11 +118,12 @@ object Changes {
             p.isExam -> "$subject: ${p.exam ?: "Klausur"}"
             else -> {
                 val parts = mutableListOf<String>()
-                p.of(Kind.TEACHER).filter { it.changed }.forEach { parts += "Vertretung " + (if (it.id == 0L) "offen" else name(master, Kind.TEACHER, it.id)) }
+                // no teacher plus a text is what schools write for EVA ("eigenverantwortliches Arbeiten", "Kurs hat Aufgaben")
+                p.of(Kind.TEACHER).filter { it.changed }.forEach { parts += if (it.id == 0L) p.substText.ifBlank { "Vertretung offen" } else "Vertretung " + name(master, Kind.TEACHER, it.id) }
                 p.of(Kind.ROOM).filter { it.changed }.forEach { parts += "Raum ${name(master, Kind.ROOM, it.id)} statt ${name(master, Kind.ROOM, it.orgId)}" }
                 if (p.additional) parts += "Zusatzstunde"
                 if (parts.isEmpty()) parts += p.substText.ifBlank { "geändert" }
-                "$subject: " + parts.joinToString(", ")
+                "$subject: " + parts.distinct().joinToString(", ")
             }
         }
         return when_(p, master) + ": " + what

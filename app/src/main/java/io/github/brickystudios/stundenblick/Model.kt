@@ -167,7 +167,7 @@ object Parse {
             info = text?.optString("info").orEmpty(),
             exam = p.optJSONObject("exam")?.let { listOf(it.optString("examtype"), it.optString("name")).filter(String::isNotBlank).joinToString(" ").ifBlank { "Klausur" } },
         )
-    }.sortedBy { it.start }
+    }.sortedBy { it.start }.let(Derive::withoutCovered)
 
     /** What getPeriodData2017 knows about one period beyond the timetable: topic and homework. */
     data class Extra(val topic: String, val homework: List<String>, val info: String)
