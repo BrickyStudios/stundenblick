@@ -44,9 +44,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -82,7 +80,7 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("EINSTELLUNGEN") },
+                title = { Text("Einstellungen") },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück") } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -91,7 +89,7 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
     ) { pad ->
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Section("Konto") {
-                Text(p?.schoolName?.ifBlank { p.school } ?: "—", fontWeight = FontWeight.SemiBold)
+                Text(p?.schoolName?.ifBlank { p.school } ?: "—", fontWeight = FontWeight.Medium)
                 Text(
                     when {
                         p == null -> ""
@@ -101,7 +99,7 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp,
                 )
-                OutlinedButton(shape = RectangleShape, onClick = { repo.logout(); ChangeJob.schedule(ctx, false); DayWidget.update(ctx); onLoggedOut() }) { Text("Abmelden und alles löschen") }
+                OutlinedButton(shape = ControlShape, onClick = { repo.logout(); ChangeJob.schedule(ctx, false); DayWidget.update(ctx); onLoggedOut() }) { Text("Abmelden und alles löschen") }
             }
 
             Section("Mein Plan") {
@@ -126,7 +124,8 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
                             repo.setHidden(current, hidden)
                         }, verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(sub.id !in hidden, null, Modifier.padding(end = 12.dp))
-                            Text(sub.title, fontSize = 15.sp)
+                            SubjectBadge(sub.id, master)
+                            if (sub.longName.isNotBlank() && sub.longName != sub.name) Text(sub.longName, Modifier.padding(start = 8.dp), fontSize = 15.sp)
                         }
                     }
                 }
@@ -201,11 +200,11 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
             Section("Verbindungstest") {
                 Text("Prüft Schritt für Schritt, was Untis für dein Konto liefert. Das Ergebnis enthält keinen Namen, kein Passwort und keinen Schlüssel, du kannst es in ein GitHub-Issue kopieren.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-                Button(shape = RectangleShape, onClick = { testing = true; scope.launch { diag = repo.connectionTest(); testing = false } }, enabled = !testing) {
+                Button(shape = ControlShape, onClick = { testing = true; scope.launch { diag = repo.connectionTest(); testing = false } }, enabled = !testing) {
                     Text(if (testing) "Prüfe …" else "Verbindung testen")
                 }
                 diag?.let { text ->
-                    SelectionContainer { Text(text, fontFamily = FontFamily.Monospace, fontSize = 12.sp) }
+                    SelectionContainer { Text(text, fontFamily = Mono, fontSize = 12.sp) }
                     TextButton(onClick = {
                         ctx.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Stundenblick Verbindungstest", text))
                     }) { Text("Kopieren") }
@@ -213,7 +212,7 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
             }
 
             Section("Über") {
-                Text("Stundenblick ${BuildConfig.VERSION_NAME}", fontWeight = FontWeight.SemiBold)
+                Text("Stundenblick ${BuildConfig.VERSION_NAME}", fontWeight = FontWeight.Medium)
                 Text("Nicht mit der Untis GmbH verbunden. Stundenblick zeigt alles, was deine Schule für dein Konto freigibt, aber nicht mehr. Daten gehen nur an den WebUntis-Server deiner Schule und, für Updates, an GitHub.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                 Text("Freie Software (GPL-3.0)", fontSize = 13.sp)
@@ -224,12 +223,7 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
 }
 
 @Composable
-private fun Section(title: String, content: @Composable () -> Unit) {
-    Column(
-        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RectangleShape).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-        content()
-    }
+private fun Section(title: String, content: @Composable () -> Unit) = Panel {
+    Label(title)
+    content()
 }

@@ -64,7 +64,7 @@ private fun <T> InfoPage(repo: Repo, kind: Repo.Info, title: String, empty: Stri
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(title.uppercase()) },
+                title = { Text(title) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück") } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -75,9 +75,9 @@ private fun <T> InfoPage(repo: Repo, kind: Repo.Info, title: String, empty: Stri
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
                 st.error?.let { e -> item { Text(e, Modifier.padding(16.dp), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
                 when {
-                    st.noRight -> item { Text("Deine Schule gibt das für dein Konto nicht frei.", Modifier.padding(24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    st.noRight -> item { Text("Deine Schule gibt das für dein Konto nicht frei.", Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     items == null -> item { Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { if (st.error == null) CircularProgressIndicator() } }
-                    items.isEmpty() -> item { Text(empty, Modifier.padding(24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    items.isEmpty() -> item { Text(empty, Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     else -> {
                         header?.let { h -> item { h(items) } }
                         items(items) { row(it); HorizontalDivider(color = LocalSignals.current.line) }
@@ -95,9 +95,10 @@ fun ExamsScreen(repo: Repo, onBack: () -> Unit) {
     InfoPage(repo, Repo.Info.EXAMS, "Klausuren", "Bis zum Schuljahresende ist keine Klausur eingetragen.", onBack,
         { InfoParse.exams(it).filter { e -> e.subjectId == null || e.subjectId !in hidden } }) { e ->
         val subject = e.subjectId?.let { m?.find(Kind.SUBJECT, it) }
-        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(subject?.let { it.longName.ifBlank { it.name } } ?: e.name.ifBlank { "Klausur" }, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SubjectBadge(e.subjectId, m)
+                Text(subject?.let { it.longName.ifBlank { it.name } } ?: e.name.ifBlank { "Klausur" }, fontSize = 16.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                 Tag(daysUntil(e.start.toLocalDate()), LocalSignals.current.exam)
             }
             Text("${day.format(e.start)}, ${hm.format(e.start)}–${hm.format(e.end)}" + e.roomIds.joinToString { m?.find(Kind.ROOM, it)?.name ?: "" }.let { if (it.isBlank()) "" else ", Raum $it" },
@@ -119,9 +120,10 @@ fun HomeworkScreen(repo: Repo, onBack: () -> Unit) {
         Row(Modifier.fillMaxWidth().clickable { repo.toggleDone(h.id) }.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.Top) {
             Checkbox(finished, { repo.toggleDone(h.id) })
             Column(Modifier.padding(top = 10.dp).weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(h.subjectId?.let { m?.find(Kind.SUBJECT, it)?.let { s -> s.longName.ifBlank { s.name } } } ?: "Hausaufgabe", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                    h.due?.let { Tag("bis " + daysUntil(it), if (finished) LocalSignals.current.muted else LocalSignals.current.changed) }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SubjectBadge(h.subjectId, m)
+                    Text(h.subjectId?.let { m?.find(Kind.SUBJECT, it)?.let { s -> s.longName.ifBlank { s.name } } } ?: "Hausaufgabe", fontSize = 16.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                    h.due?.let { Tag("bis " + daysUntil(it), if (finished) LocalSignals.current.muted else MaterialTheme.colorScheme.onSurface) }
                 }
                 Text(h.text, fontSize = 15.sp, textDecoration = if (finished) TextDecoration.LineThrough else null,
                     color = if (finished) LocalSignals.current.muted else MaterialTheme.colorScheme.onSurface)
@@ -139,12 +141,12 @@ fun AbsencesScreen(repo: Repo, onBack: () -> Unit) {
     InfoPage(repo, Repo.Info.ABSENCES, "Fehlzeiten", "In diesem Schuljahr sind keine Fehlzeiten eingetragen.", onBack, InfoParse::absences,
         header = { list ->
             val open = list.count { !it.excused }
-            FlowRow(Modifier.padding(horizontal = 20.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Tag("${list.size} eingetragen", MaterialTheme.colorScheme.primary)
+            FlowRow(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Tag("${list.size} eingetragen", MaterialTheme.colorScheme.onSurface)
                 if (open > 0) Tag("$open nicht entschuldigt", s.cancelled) else Tag("alle entschuldigt", s.muted)
             }
         }) { a ->
-        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(day.format(a.start) + ", " + hm.format(a.start) + "–" + hm.format(a.end) + if (a.end.toLocalDate() != a.start.toLocalDate()) " (bis ${day.format(a.end)})" else "",
                     fontSize = 15.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
@@ -159,8 +161,8 @@ fun AbsencesScreen(repo: Repo, onBack: () -> Unit) {
 fun OfficeHoursScreen(repo: Repo, onBack: () -> Unit) {
     val ctx = LocalContext.current
     InfoPage(repo, Repo.Info.OFFICE, "Sprechstunden", "In den nächsten Tagen sind keine Sprechstunden eingetragen.", onBack, InfoParse::officeHours) { o ->
-        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(o.teacher, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(o.teacher, fontSize = 16.sp, fontWeight = FontWeight.Medium)
             Text("${day.format(o.start)}, ${hm.format(o.start)}–${hm.format(o.end)}" + if (o.rooms.isNotBlank()) ", ${o.rooms}" else "", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row {
                 o.email?.let { m -> TextButton(onClick = { ctx.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$m"))) }) { Text("E-Mail") } }

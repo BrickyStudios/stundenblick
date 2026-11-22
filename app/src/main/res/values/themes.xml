@@ -1,16 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Compose draws everything; this only sets the window colors before the first frame -->
-    <style name="Theme.Stundenblick" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@color/paper</item>
+    <!-- Compose draws everything; this only sets the window before the first frame and the system dialogs (time picker).
+         Always dark, like a departure board, whatever the phone is set to. -->
+    <style name="Theme.Stundenblick" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/ink</item>
+        <item name="android:colorBackground">@color/ink</item>
+        <item name="android:colorPrimary">@color/card</item>
+        <item name="android:colorAccent">@color/signal</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:timePickerDialogTheme">@style/Stundenblick.TimePicker</item>
     </style>
-    <color name="paper">#ECE4D0</color>
-    <color name="ink">#15100E</color>
-    <color name="icon_bg">#15100E</color>
-    <color name="widget_text">#15100E</color>
-    <color name="widget_muted">#584E45</color>
-    <color name="widget_bg">#F4EEE0</color>
+    <!-- the alarm hours use the system time picker: raised ink surface, yellow hand -->
+    <style name="Stundenblick.TimePicker" parent="android:Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">@color/signal</item>
+        <item name="android:colorPrimary">@color/card</item>
+        <item name="android:colorBackground">@color/raised</item>
+        <item name="android:colorBackgroundFloating">@color/raised</item>
+        <item name="android:timePickerStyle">@style/Stundenblick.TimePickerWidget</item>
+    </style>
+    <style name="Stundenblick.TimePickerWidget" parent="android:Widget.Material.TimePicker">
+        <item name="android:headerBackground">@color/card</item>
+        <item name="android:numbersBackgroundColor">@color/card</item>
+    </style>
+    <color name="ink">#0B0D14</color>
+    <color name="card">#11141C</color>
+    <color name="raised">#1A1E28</color>
+    <color name="signal">#F2C230</color>
+    <color name="icon_bg">#0B0D14</color>
+    <color name="widget_text">#EEF0F5</color>
+    <color name="widget_muted">#A3A9B8</color>
+    <color name="widget_bg">#11141C</color>
     <string name="widget_description">Heutige Stunden mit Ausfällen und Vertretungen</string>
 </resources>

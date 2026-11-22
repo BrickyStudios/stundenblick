@@ -1,28 +1,29 @@
 <!doctype html><html lang="de"><head><meta charset="utf-8">
 <!-- Repo images: tall 1080x1920 store-style shots and the 1280x640 social preview. Rendered by tools/bilder.mjs -->
 <style>
-/* Broadside like the app: ink stock, buff type, Six Caps head line, square corners; fonts straight from the app */
-@font-face{font-family:"Six Caps";src:url(../app/src/main/res/font/six_caps.ttf)}
-@font-face{font-family:"Archivo Narrow";font-weight:400;src:url(../app/src/main/res/font/archivo_narrow_400.ttf)}
-@font-face{font-family:"Archivo Narrow";font-weight:500;src:url(../app/src/main/res/font/archivo_narrow_500.ttf)}
-:root{--ink:#130E0B;--paper:#ECE4D0;--sub:#CCC3B2;--muted:#A09789;--red:#E55033;--ochre:#D09945;--line:#302A24}
+/* Abfahrt like the app: ink surfaces, Geist type, JetBrains Mono badges, signal yellow only for changes; fonts straight from the app */
+@font-face{font-family:"Geist";font-weight:400;src:url(../app/src/main/res/font/geist_400.ttf)}
+@font-face{font-family:"Geist";font-weight:500;src:url(../app/src/main/res/font/geist_500.ttf)}
+@font-face{font-family:"JetBrains Mono";font-weight:600;src:url(../app/src/main/res/font/jetbrains_mono_600.ttf)}
+:root{--bg:#0b0d14;--card:#11141c;--raised:#1a1e28;--t1:#eef0f5;--t2:#a3a9b8;--t3:#7a8296;--line:rgba(238,240,245,.08);--sig:#f2c230;--bad:#ff6b6b}
 *{margin:0;box-sizing:border-box}
 html,body{width:var(--w);height:var(--h);overflow:hidden}
-body{background:var(--ink);color:var(--paper);font-family:"Archivo Narrow",sans-serif}
+body{background:var(--bg);color:var(--t1);font-family:"Geist",sans-serif;font-feature-settings:"tnum"}
 .tall{display:flex;flex-direction:column;align-items:center;padding-top:120px}
-h1{font-family:"Six Caps",sans-serif;font-weight:400;font-size:200px;line-height:.9;letter-spacing:.02em;text-transform:uppercase;text-align:center;max-width:960px}
-.sub{margin-top:32px;font-size:40px;color:var(--sub)}
-.phone{margin-top:80px;width:800px;padding:22px 22px 0;background:#0B0806;box-shadow:0 0 0 3px var(--line)}
-.phone img{display:block;width:100%}
-.wide{display:grid;grid-template-columns:1fr 430px;grid-template-rows:640px;gap:40px;height:100%;padding:0 70px 0 84px;align-items:center}
-.brand{display:flex;align-items:center;gap:16px;font-size:34px;font-weight:500}
-.logo{width:46px;height:46px;display:grid;grid-template-columns:repeat(3,12px);gap:2px;place-content:center}
-.logo i{width:12px;height:12px;background:rgba(236,228,208,.4)}.logo i.on{background:var(--red)}
-.wide h1{text-align:left;font-size:128px;max-width:none;margin-top:24px}
+h1{font-weight:500;font-size:96px;line-height:1.05;letter-spacing:-.03em;text-align:center;max-width:960px}
+.sub{margin-top:32px;font-size:40px;color:var(--t2)}
+.phone{margin-top:80px;width:800px;padding:16px 16px 0;background:var(--card);border:2px solid var(--line);border-bottom:0;border-radius:48px 48px 0 0}
+.phone img{display:block;width:100%;border-radius:34px 34px 0 0}
+.wide{display:grid;grid-template-columns:1fr 430px;grid-template-rows:640px;gap:48px;height:100%;padding:0 72px 0 80px;align-items:center}
+.brand{display:flex;align-items:center;gap:16px;font-size:32px;font-weight:500}
+.logo{width:46px;height:46px;display:grid;grid-template-columns:repeat(3,12px);gap:2px;place-content:center;background:var(--bg)}
+.logo i{width:12px;height:12px;background:rgba(238,240,245,.4)}.logo i.on{background:var(--sig)}
+.wide h1{text-align:left;font-size:76px;max-width:none;margin-top:28px}
 .wide .sub{font-size:26px;margin-top:24px}
-.chips{display:flex;gap:8px;margin-top:28px}.chips span{font-size:20px;font-weight:500;padding:6px 12px}
-.small{margin-top:28px;font-size:21px;color:var(--muted)}
-.wide .phone{width:430px;margin-top:90px;padding:14px 14px 0;align-self:start}
+.chips{display:flex;gap:10px;margin-top:28px}.chips span{font-size:20px;font-weight:500;padding:6px 14px;border-radius:8px}
+.small{margin-top:28px;font-size:21px;color:var(--t3)}
+.wide .phone{width:430px;margin-top:96px;padding:10px 10px 0;border-radius:32px 32px 0 0;align-self:start}
+.wide .phone img{border-radius:24px 24px 0 0}
 </style></head><body><script>
 const q=new URLSearchParams(location.search);
 document.documentElement.style.setProperty("--w",q.get("w")+"px");document.documentElement.style.setProperty("--h",q.get("h")+"px");
@@ -30,7 +31,7 @@ const t=q.get("t").replace("|","<br>");
 const logo='<span class="logo">'+[0,0,0,0,1,0,0,0,0].map(o=>`<i class="${o?"on":""}"></i>`).join("")+'</span>';
 document.body.innerHTML = q.get("art")==="wide"
  ? `<div class="wide"><div><div class="brand">${logo}<span>Stundenblick</span></div><h1>${t}</h1><div class="sub">${q.get("s")}</div>
-    <div class="chips"><span style="background:rgba(229,80,51,.16);color:var(--red)">Entfall</span><span style="background:rgba(208,153,69,.16);color:var(--ochre)">Vertretung</span><span style="background:rgba(208,153,69,.16);color:var(--ochre)">Raumänderung</span><span style="background:rgba(236,228,208,.16);color:var(--paper)">Klausur</span></div>
+    <div class="chips"><span style="background:rgba(255,107,107,.14);color:var(--bad)">Entfall</span><span style="background:rgba(242,194,48,.14);color:var(--sig)">Vertretung</span><span style="background:rgba(242,194,48,.14);color:var(--sig)">Raumänderung</span><span style="background:rgba(238,240,245,.14);color:var(--t1)">Klausur</span></div>
     <div class="small">github.com/BrickyStudios/stundenblick</div></div><div class="phone"><img src="${q.get("img")}"></div></div>`
  : `<div class="tall"><h1>${t}</h1><div class="sub">${q.get("s")}</div><div class="phone"><img src="${q.get("img")}"></div></div>`;
 </script></body></html>

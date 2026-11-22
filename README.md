@@ -5,25 +5,25 @@
 <p align="center"><strong>Alle Stundenpläne, die deine Schule in WebUntis für dich freigibt: deine Klasse, andere Klassen, Lehrkräfte, Räume. Ausfall, Vertretung, Raumänderung und Klausur sind farbig markiert, du siehst die freien Räume der ganzen Schule, Oberstufenkurse lassen sich ausblenden, der Plan bleibt offline lesbar, und eine Meldung kommt, wenn sich etwas ändert. Ohne Tracking, ohne Google-Dienste, 1,5 MB groß, GPL-3.0.</strong></p>
 
 <p align="center">
-  <a href="https://kotlinlang.org/"><img alt="Made with Kotlin" src="https://img.shields.io/badge/made_with-Kotlin-15100E?style=for-the-badge&logo=kotlin&logoColor=ECE4D0"></a>
+  <a href="https://kotlinlang.org/"><img alt="Made with Kotlin" src="https://img.shields.io/badge/made_with-Kotlin-0B0D14?style=for-the-badge&logo=kotlin&logoColor=EEF0F5"></a>
   <br>
-  <a href="#größe-und-tempo"><img alt="APK 1,5 MB" src="https://img.shields.io/badge/APK-1%2C5_MB-C12B09?labelColor=15100E"></a>
-  <a href="#installieren"><img alt="Android 8.0 oder neuer" src="https://img.shields.io/badge/Android-8.0%2B-C12B09?logo=android&logoColor=ECE4D0&labelColor=15100E"></a>
-  <a href="#datenschutz"><img alt="Ohne Google-Dienste, läuft auf GrapheneOS" src="https://img.shields.io/badge/GrapheneOS-ohne_Google--Dienste-C12B09?labelColor=15100E"></a>
-  <a href="https://developer.android.com/compose"><img alt="Jetpack Compose" src="https://img.shields.io/badge/UI-Jetpack_Compose-C12B09?logo=jetpackcompose&logoColor=ECE4D0&labelColor=15100E"></a>
-  <a href="https://github.com/BrickyStudios/stundenblick/actions/workflows/ci.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/BrickyStudios/stundenblick/ci.yml?label=tests&color=C12B09&labelColor=15100E"></a>
-  <a href="LICENSE"><img alt="Lizenz GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-C12B09?labelColor=15100E"></a>
-  <a href="https://github.com/BrickyStudios/stundenblick/commits/main"><img alt="Letzter Commit" src="https://img.shields.io/github/last-commit/BrickyStudios/stundenblick?color=C12B09&labelColor=15100E"></a>
+  <a href="#größe-und-tempo"><img alt="APK 1,5 MB" src="https://img.shields.io/badge/APK-1%2C5_MB-F2C230?labelColor=0B0D14"></a>
+  <a href="#installieren"><img alt="Android 8.0 oder neuer" src="https://img.shields.io/badge/Android-8.0%2B-F2C230?logo=android&logoColor=EEF0F5&labelColor=0B0D14"></a>
+  <a href="#datenschutz"><img alt="Ohne Google-Dienste, läuft auf GrapheneOS" src="https://img.shields.io/badge/GrapheneOS-ohne_Google--Dienste-F2C230?labelColor=0B0D14"></a>
+  <a href="https://developer.android.com/compose"><img alt="Jetpack Compose" src="https://img.shields.io/badge/UI-Jetpack_Compose-F2C230?logo=jetpackcompose&logoColor=EEF0F5&labelColor=0B0D14"></a>
+  <a href="https://github.com/BrickyStudios/stundenblick/actions/workflows/ci.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/BrickyStudios/stundenblick/ci.yml?label=tests&color=F2C230&labelColor=0B0D14"></a>
+  <a href="LICENSE"><img alt="Lizenz GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-F2C230?labelColor=0B0D14"></a>
+  <a href="https://github.com/BrickyStudios/stundenblick/commits/main"><img alt="Letzter Commit" src="https://img.shields.io/github/last-commit/BrickyStudios/stundenblick?color=F2C230&labelColor=0B0D14"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/BrickyStudios/stundenblick/releases/latest/download/Stundenblick.apk"><img alt="Stundenblick.apk herunterladen" src="https://img.shields.io/badge/Download-Stundenblick.apk-C12B09?style=for-the-badge&logo=android&logoColor=ECE4D0&labelColor=C12B09&color=15100E"></a>
-  <a href="https://brickystudios.github.io/stundenblick/"><img alt="Website" src="https://img.shields.io/badge/Website-Deutsch-15100E?style=for-the-badge&labelColor=15100E&color=332C29"></a>
+  <a href="https://github.com/BrickyStudios/stundenblick/releases/latest/download/Stundenblick.apk"><img alt="Stundenblick.apk herunterladen" src="https://img.shields.io/badge/Download-Stundenblick.apk-F2C230?style=for-the-badge&logo=android&logoColor=14120A&labelColor=F2C230&color=0B0D14"></a>
+  <a href="https://brickystudios.github.io/stundenblick/"><img alt="Website" src="https://img.shields.io/badge/Website-Deutsch-0B0D14?style=for-the-badge&labelColor=0B0D14&color=1A1E28"></a>
 </p>
 
 <p align="center">
   <img src="docs/bilder/1-woche.png" width="200" alt="Die ganze Woche auf einen Blick: Wochenraster mit Entfall, Vertretung, Raumänderung und Klausur">
-  <img src="docs/bilder/2-heute.png" width="200" alt="Heute-Seite: laufende Stunde mit Restminuten, nächste Stunde, Hausaufgaben bis morgen">
+  <img src="docs/bilder/2-heute.png" width="200" alt="Heute-Seite: laufende Stunde mit Restminuten, darunter der Rest des Tages mit Zeit, Fach und Raum, Hausaufgaben bis morgen">
   <img src="docs/bilder/3-schule.png" width="200" alt="Freie Räume der ganzen Schule in der 3. Stunde, jeweils frei bis wann">
   <img src="docs/bilder/4-anmelden.png" width="200" alt="Anmeldung per QR-Code aus WebUntis, auch mit Zwei-Faktor">
 </p>
@@ -49,9 +49,9 @@ In Stundenblick steckt außer den Android-Bausteinen (AndroidX, Jetpack Compose)
 
 ## Was die App kann
 
-- **Heute-Seite:** jetzige und nächste Stunde mit Raum und Restminuten, Änderungen seit gestern, nach Schulschluss der nächste Schultag, die Woche in Zahlen und der Ferien-Countdown.
+- **Heute-Seite:** die laufende Stunde mit Raum und Restminuten, darunter der Rest des Tages mit Zeit, Fach und Raum, Änderungen seit gestern, nach Schulschluss der nächste Schultag, die Woche in Zahlen und der Ferien-Countdown.
 - **Jeder freigegebene Plan:** eigene Klasse, andere Klassen, Lehrkräfte, Räume, Fächer, mit Suche und Favoriten. Über fremden Plänen steht, wo die Lehrkraft oder Klasse gerade ist. Namen in den Details öffnen deren Plan.
-- **Änderungen auf einen Blick:** Entfall rot und durchgestrichen, Vertretung, Raumänderung und Zusatzstunde ocker mit dem alten Namen daneben, Klausur schwarz gerahmt, neue Änderungen mit Punkt markiert. EVA (Lehrkraft gestrichen, ohne Vertretung) steht als Entfall da, mit dem Text der Schule. Ein Ausflug oder eine Klausur über mehrere Kurse ersetzt die Stunden darunter, statt sie als Entfall zu zeigen; eine Klausur über fünf Stunden zählt als eine. Jedes Fach trägt die Farbe, die ihm die Schule in Untis gibt.
+- **Änderungen auf einen Blick:** Entfall rot und durchgestrichen, Vertretung, Raumänderung und Zusatzstunde gelb mit dem alten Namen daneben, Klausur weiß gerahmt, neue Änderungen mit gelbem Punkt markiert. EVA (Lehrkraft gestrichen, ohne Vertretung) steht als Entfall da, mit dem Text der Schule. Ein Ausflug oder eine Klausur über mehrere Kurse ersetzt die Stunden darunter, statt sie als Entfall zu zeigen; eine Klausur über fünf Stunden zählt als eine. Jedes Fach steht als farbiges Kürzel da, in der Farbe, die ihm die Schule in Untis gibt; zu dunkle Farben hellt die App auf, damit das Kürzel lesbar bleibt.
 - **Woche oder Tag:** Wochenraster mit Doppelstunden als Block, Jetzt-Linie und Kursnamen; Tagesliste mit Pausen und Freistunden.
 - **Die ganze Woche, auch wenn die Schule nur morgen zeigt:** Tage, die Untis noch nicht freigibt, füllt die App blass mit dem normalen Plan aus einer früheren Woche, ohne Ausfälle und Vertretungen. Sobald die Schule den Tag freigibt, stehen dort die echten Stunden.
 - **Schule auf einen Blick:** alle freien Räume einer Stunde, bis wann sie frei sind und ob sie durch Entfall frei wurden, dazu wer wo Unterricht hat, durchsuchbar nach Klasse, Kurs, Lehrkraft oder Raum. Gibt die Schule Raum- oder Lehrkraftpläne nicht frei, setzt die App sie aus den Klassenplänen zusammen.

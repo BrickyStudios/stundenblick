@@ -16,7 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -68,7 +68,7 @@ fun PickerScreen(repo: Repo, ownMode: Boolean, onBack: () -> Unit, onPick: (Elem
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text((if (ownMode) "Deine Klasse wählen" else "Plan wählen").uppercase()) },
+                title = { Text(if (ownMode) "Deine Klasse wählen" else "Plan wählen") },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück") } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -91,9 +91,9 @@ fun PickerScreen(repo: Repo, ownMode: Boolean, onBack: () -> Unit, onPick: (Elem
             LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
                 val own = repo.own.value
                 if (!ownMode && own != null && query.isBlank()) item {
-                    Row(Modifier.fillMaxWidth().clickable { onPick(own) }.padding(horizontal = 20.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Home, null, Modifier.padding(end = 12.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text("Mein Plan", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                    Row(Modifier.fillMaxWidth().clickable { onPick(own) }.padding(horizontal = 16.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Home, null, Modifier.padding(end = 12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Mein Plan", fontWeight = FontWeight.Medium, fontSize = 16.sp)
                     }
                     HorizontalDivider(color = LocalSignals.current.line)
                 }
@@ -104,13 +104,14 @@ fun PickerScreen(repo: Repo, ownMode: Boolean, onBack: () -> Unit, onPick: (Elem
                             tab == "FAV" && q.isEmpty() -> "Noch keine Favoriten. Tipp auf den Stern neben einem Plan."
                             else -> "Nichts gefunden"
                         },
-                        Modifier.padding(24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 items(list, key = { it.key }) { e ->
                     Row(Modifier.fillMaxWidth().clickable { onPick(e) }.padding(start = 20.dp, end = 8.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text(e.name, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                            if (e.kind == Kind.SUBJECT) SubjectBadge(e.id, master, Modifier.padding(vertical = 2.dp))
+                            else Text(e.name, fontSize = 16.sp, fontWeight = FontWeight.Medium, fontFamily = if (e.kind == Kind.ROOM || e.kind == Kind.TEACHER) Mono else null)
                             if (e.longName.isNotBlank() && e.longName != e.name) Text(e.longName, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             if (query.isNotBlank()) Text(e.kind.label, fontSize = 11.sp, color = LocalSignals.current.muted)
                         }
@@ -118,7 +119,7 @@ fun PickerScreen(repo: Repo, ownMode: Boolean, onBack: () -> Unit, onPick: (Elem
                             val fav = repo.isFavorite(e)
                             IconButton(onClick = { repo.toggleFavorite(e) }) {
                                 Icon(if (fav) Icons.Filled.Star else Icons.Outlined.Star, if (fav) "Aus Favoriten entfernen" else "Zu Favoriten",
-                                    tint = if (fav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
+                                    tint = if (fav) MaterialTheme.colorScheme.onSurface else LocalSignals.current.muted)
                             }
                         }
                     }

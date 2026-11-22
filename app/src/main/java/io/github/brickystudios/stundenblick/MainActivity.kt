@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,10 +15,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -59,7 +60,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -76,7 +76,8 @@ class MainActivity : ComponentActivity() {
     private val link = mutableStateOf<SetSchool?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        // dark bars with light icons always, like the app
+        enableEdgeToEdge(SystemBarStyle.dark(android.graphics.Color.TRANSPARENT), SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) take(intent)
         val repo = Repo.get(this)
@@ -153,17 +154,22 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
         Screen.TABS -> Scaffold(
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
-                Column { HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.onSurface)
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                    listOf(Triple("heute", "Heute", Icons.Default.Home), Triple("plan", "Plan", Icons.Default.DateRange), Triple("schule", "Schule", Icons.Default.LocationOn), Triple("mehr", "Mehr", Icons.Default.Menu))
+                val s = LocalSignals.current
+                Column { HorizontalDivider(thickness = 1.dp, color = s.line)
+                NavigationBar(containerColor = s.nav) {
+                    listOf(Triple("heute", "Heute", Icons.Outlined.Home), Triple("plan", "Plan", Icons.Outlined.DateRange), Triple("schule", "Schule", Icons.Outlined.LocationOn), Triple("mehr", "Mehr", Icons.Outlined.Menu))
                         .forEach { (id, label, icon) ->
                             val count = if (id == "mehr") repo.history.value.count { !it.seen } else 0
                             NavigationBarItem(
                                 selected = tab == id, onClick = { tab = id },
-                                icon = { if (count > 0) BadgedBox(badge = { Badge { Text("$count") } }) { Icon(icon, null) } else Icon(icon, null) },
-                                label = { Text(label, fontWeight = if (tab == id) FontWeight.SemiBold else FontWeight.Normal) },
-                                // the M3 indicator is a pill; the bill marks the current tab by ink and weight alone
-                                colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent),
+                                // unseen changes are changes: yellow like every other change
+                                icon = { if (count > 0) BadgedBox(badge = { Badge(containerColor = s.accent, contentColor = s.onAccent) { Text("$count") } }) { Icon(icon, null) } else Icon(icon, null) },
+                                label = { Text(label, fontWeight = if (tab == id) FontWeight.Medium else FontWeight.Normal) },
+                                // no pill: the active tab is a yellow icon and a light label, the rest stays muted
+                                colors = NavigationBarItemDefaults.colors(
+                                    indicatorColor = Color.Transparent, selectedIconColor = s.accent, selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                    unselectedIconColor = s.muted, unselectedTextColor = s.muted,
+                                ),
                             )
                         }
                 } }
@@ -196,7 +202,7 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
                     if (u.failed) Text("Download fehlgeschlagen. Versuch es noch einmal.", color = MaterialTheme.colorScheme.error)
                 }
             },
-            confirmButton = { Button(shape = RectangleShape, onClick = { scope.launch { Updater.install(ctx) } }, enabled = u.progress == null) { Text("Installieren") } },
+            confirmButton = { Button(shape = ControlShape, onClick = { scope.launch { Updater.install(ctx) } }, enabled = u.progress == null) { Text("Installieren") } },
             dismissButton = { TextButton(onClick = { Updater.later() }) { Text("Später") } },
         )
     }
@@ -205,16 +211,16 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
 /** F3: Untis named no own timetable (anonymous access, some parent accounts). One tap fixes it. */
 @Composable
 private fun OwnMissing(profile: Profile, onSetOwn: () -> Unit, onPick: () -> Unit, onSettings: () -> Unit) {
-    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Spacer(Modifier.height(24.dp))
-        PosterTitle("Kein eigener Plan")
+        PageTitle("Kein eigener Plan")
         Text(
             if (profile.anonymous) "Ohne Anmeldung kennt Untis dich nicht. Wähl deine Klasse, dann ist sie dein Plan."
             else "Untis liefert für dein Konto keinen eigenen Stundenplan. Das passiert bei manchen Schulen und Eltern-Konten. Wähl deine Klasse als eigenen Plan.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Button(shape = RectangleShape, onClick = onSetOwn) { Text("Klasse als eigenen Plan setzen") }
-        OutlinedButton(shape = RectangleShape, onClick = onPick) { Text("Anderen Plan ansehen") }
+        Button(shape = ControlShape, onClick = onSetOwn) { Text("Klasse als eigenen Plan setzen") }
+        OutlinedButton(shape = ControlShape, onClick = onPick) { Text("Anderen Plan ansehen") }
         TextButton(onClick = onSettings) { Text("Einstellungen und Verbindungstest") }
     }
 }
@@ -224,17 +230,17 @@ private fun LinkConfirm(repo: Repo, l: SetSchool, onDone: () -> Unit) {
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Spacer(Modifier.height(24.dp))
-        Text("Mit diesem Untis-Zugang anmelden?", fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
-        Card {
+        PageTitle("Mit diesem Untis-Zugang anmelden?")
+        Panel {
             Text("Schule: ${l.school}")
             Text("Server: ${l.server}")
             Text("Benutzer: ${l.user ?: "ohne Anmeldung"}")
         }
         if (repo.profile.value != null) Text("Dein bisheriger Zugang in Stundenblick wird dabei ersetzt.", color = LocalSignals.current.changed)
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Button(shape = RectangleShape, enabled = !busy, onClick = {
+        Button(shape = ControlShape, enabled = !busy, onClick = {
             busy = true
             scope.launch {
                 runCatching { repo.login(Profile(l.server, l.school, "", l.user, l.key)) }
@@ -244,14 +250,6 @@ private fun LinkConfirm(repo: Repo, l: SetSchool, onDone: () -> Unit) {
         }) { Text(if (busy) "Melde an …" else "Anmelden") }
         TextButton(onClick = onDone, enabled = !busy) { Text("Abbrechen") }
     }
-}
-
-@Composable
-private fun Card(content: @Composable () -> Unit) {
-    Column(
-        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RectangleShape).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) { content() }
 }
 
 @Composable
@@ -282,9 +280,9 @@ private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
     }
 
     BackHandler(enabled = school != null) { school = null; error = null; needsCode = false }
-    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Spacer(Modifier.height(12.dp))
-        PosterTitle("Stundenblick", size = 72)
+        PageTitle("Stundenblick")
         Text("Alle Stundenpläne deiner Schule, die Untis für dich freigibt: Klassen, Lehrkräfte, Räume. Mit Ausfällen, Vertretungen und Klausuren auf einen Blick.",
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -292,24 +290,24 @@ private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
 
         val s = school
         if (s == null) {
-            Card {
-                Text("Mit QR-Code aus WebUntis", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            Panel {
+                Text("Mit QR-Code aus WebUntis", fontWeight = FontWeight.Medium, fontSize = 16.sp)
                 Text("Der sicherste Weg, auch mit Zwei-Faktor-Anmeldung: WebUntis im Browser öffnen → Profil → Freigaben → „Anzeigen“. Scanne den QR-Code mit der Kamera-App, sie öffnet Stundenblick. Oder kopiere den Link darunter und füge ihn hier ein.",
                     fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(pasted, { pasted = it }, Modifier.fillMaxWidth(), placeholder = { Text("untis://setschool?…") }, singleLine = true)
-                Button(shape = RectangleShape, enabled = pasted.isNotBlank() && !busy, onClick = {
+                Button(shape = ControlShape, enabled = pasted.isNotBlank() && !busy, onClick = {
                     val l = Parse.setSchool(pasted)
                     if (l == null) error = "Das ist kein gültiger Untis-Link." else run { repo.login(Profile(l.server, l.school, "", l.user, l.key)); onDone() }
                 }) { Text("Link übernehmen") }
             }
-            Card {
-                Text("Schule suchen", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            Panel {
+                Text("Schule suchen", fontWeight = FontWeight.Medium, fontSize = 16.sp)
                 OutlinedTextField(
                     query, { query = it }, Modifier.fillMaxWidth(), placeholder = { Text("Name oder Ort der Schule") }, singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = { if (query.length >= 3) run { results = withContext(Dispatchers.IO) { Untis.searchSchools(query.trim()) } } }),
                 )
-                Button(shape = RectangleShape, enabled = query.trim().length >= 3 && !busy, onClick = { run { results = withContext(Dispatchers.IO) { Untis.searchSchools(query.trim()) } } }) { Text("Suchen") }
+                Button(shape = ControlShape, enabled = query.trim().length >= 3 && !busy, onClick = { run { results = withContext(Dispatchers.IO) { Untis.searchSchools(query.trim()) } } }) { Text("Suchen") }
                 results?.let { list ->
                     if (list.isEmpty()) Text("Keine Schule gefunden", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     list.forEach { r ->
@@ -325,15 +323,15 @@ private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
             Text("Nicht mit der Untis GmbH verbunden. Dein Passwort wird nicht gespeichert, nur der Zugangsschlüssel, den Untis dafür ausgibt.",
                 fontSize = 12.sp, color = LocalSignals.current.muted)
         } else {
-            Card {
-                Text(s.name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            Panel {
+                Text(s.name, fontWeight = FontWeight.Medium, fontSize = 16.sp)
                 if (s.address.isNotBlank()) Text(s.address, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(user, { user = it }, Modifier.fillMaxWidth(), label = { Text("Benutzername") }, singleLine = true)
                 OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text("Passwort") }, singleLine = true,
                     visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
                 if (needsCode) OutlinedTextField(code, { code = it.filter(Char::isDigit).take(6) }, Modifier.fillMaxWidth(), label = { Text("6-stelliger Code") },
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
-                Button(shape = RectangleShape, enabled = user.isNotBlank() && password.isNotBlank() && !busy, onClick = {
+                Button(shape = ControlShape, enabled = user.isNotBlank() && password.isNotBlank() && !busy, onClick = {
                     run {
                         val secret = withContext(Dispatchers.IO) { Untis.appSecret(s.server, s.login, user.trim(), password, code.ifBlank { null }) }
                         repo.login(Profile(s.server, s.login, s.name, user.trim(), secret))
@@ -341,7 +339,7 @@ private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
                         onDone()
                     }
                 }) { Text("Anmelden") }
-                OutlinedButton(shape = RectangleShape, enabled = !busy, onClick = { run { repo.login(Profile(s.server, s.login, s.name, null, null)); onDone() } }) { Text("Ohne Anmeldung: öffentlicher Plan") }
+                OutlinedButton(shape = ControlShape, enabled = !busy, onClick = { run { repo.login(Profile(s.server, s.login, s.name, null, null)); onDone() } }) { Text("Ohne Anmeldung: öffentlicher Plan") }
                 TextButton(onClick = { school = null; error = null; needsCode = false }) { Text("Andere Schule") }
             }
         }

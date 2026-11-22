@@ -1,5 +1,6 @@
 package io.github.brickystudios.stundenblick
 
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -27,13 +28,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -61,7 +64,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -85,12 +87,16 @@ import java.time.temporal.IsoFields
 import java.util.Locale
 
 private const val CENTER = 500
-private val minuteHeight = 1.15.dp
-private val gutter = 30.dp
+private val minuteHeight = 1.3.dp
+private val gutter = 38.dp
 private val de = Locale.GERMAN
 private val hm = DateTimeFormatter.ofPattern("HH:mm")
 private val dayLong = DateTimeFormatter.ofPattern("EEEE, d. MMMM", de)
 private val dm = DateTimeFormatter.ofPattern("d.M.", de)
+private val dMonth = DateTimeFormatter.ofPattern("d. MMMM", de)
+
+/** "16.–20. November", or "30. November – 4. Dezember" across a month */
+private fun span(a: LocalDate, b: LocalDate) = if (a.month == b.month) "${a.dayOfMonth}.–${dMonth.format(b)}" else "${dMonth.format(a)} – ${dMonth.format(b)}"
 
 /** Weekend: show the coming week, the past one is over. */
 private fun startMonday(today: LocalDate) =
@@ -139,27 +145,23 @@ fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings
     val shownMonday = if (weekView) mondayOf(weekPager.currentPage) else Parse.monday(dayOf(dayPager.currentPage))
     val week = repo.shown(element, shownMonday)
     val subtitle = if (weekView) {
-        "KW ${shownMonday.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)}, ${dm.format(shownMonday)}–${dm.format(shownMonday.plusDays(4))}"
+        "KW ${shownMonday.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)} · ${span(shownMonday, shownMonday.plusDays(4))}"
     } else dayLong.format(dayOf(dayPager.currentPage))
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Column(Modifier.clickable(onClick = onPick)) {
-                        Text(element.name.uppercase(), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-                    }
-                },
+                title = { Text(element.name, Modifier.clickable(onClick = onPick), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                expandedHeight = 56.dp,
                 actions = {
                     TextButton(onClick = {
-                        scope.launch { if (weekView) weekPager.animateScrollToPage(CENTER) else dayPager.animateScrollToPage(CENTER * 5 + firstDay) }
+                        scope.launch { val ease = tween<Float>(400, easing = Ease); if (weekView) weekPager.animateScrollToPage(CENTER, animationSpec = ease) else dayPager.animateScrollToPage(CENTER * 5 + firstDay, animationSpec = ease) }
                     }) { Text("Jetzt") }
                     IconButton(onClick = { weekView = !weekView; repo.weekView = weekView }) {
-                        Icon(if (weekView) Icons.Default.List else Icons.Default.DateRange, if (weekView) "Tagesansicht" else "Wochenansicht")
+                        Icon(if (weekView) Icons.AutoMirrored.Outlined.List else Icons.Outlined.DateRange, if (weekView) "Tagesansicht" else "Wochenansicht")
                     }
-                    IconButton(onClick = onPick) { Icon(Icons.Default.Search, "Anderen Plan wählen") }
-                    IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, "Einstellungen") }
+                    IconButton(onClick = onPick) { Icon(Icons.Outlined.Search, "Anderen Plan wählen") }
+                    IconButton(onClick = onSettings) { Icon(Icons.Outlined.Settings, "Einstellungen") }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -168,11 +170,13 @@ fun TimetableScreen(repo: Repo, element: Element, onPick: () -> Unit, onSettings
         snackbarHost = { SnackbarHost(snackbar) },
     ) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
+            // under the bar, not in it: on a 360dp phone the actions leave the title too little room for the week
+            Text(subtitle, Modifier.padding(horizontal = 16.dp), fontSize = 14.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
             StatusLine(week)
             if (!isOwn && element.kind != Kind.SUBJECT) NowLine(repo, element, master, now)
             week?.periods?.let { ps ->
                 val c = Derive.weekCount(Derive.blocks(Filter.apply(ps, hidden)))
-                if (c.any) Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) { WeekLine(c) }
+                if (c.any) Box(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp)) { WeekLine(c) }
                 ProjectedLine(ps.filter { it.projected }.map { it.start.toLocalDate() }.distinct().sorted(), weekView, if (weekView) null else dayOf(dayPager.currentPage))
             }
             PullToRefreshBox(
@@ -217,7 +221,7 @@ private fun ProjectedLine(days: List<LocalDate>, weekView: Boolean, day: LocalDa
     Text(
         (if (weekView) "$names: voraussichtlich" else "Voraussichtlich") + ", aus einer früheren Woche. Die Schule zeigt " +
             (if (weekView && days.size > 1) "diese Tage" else "den Tag") + " noch nicht, Ausfälle und Vertretungen fehlen.",
-        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)).padding(horizontal = 16.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth().background(LocalSignals.current.raised).padding(horizontal = 16.dp, vertical = 8.dp),
         color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp,
     )
 }
@@ -229,7 +233,7 @@ private fun StatusLine(week: Week?) {
     val stand = if (week.fetchedAt > 0) " Stand: " + java.text.SimpleDateFormat("EE HH:mm", de).format(java.util.Date(week.fetchedAt)) else ""
     Text(
         error + stand,
-        Modifier.fillMaxWidth().background(s.changed.copy(alpha = 0.12f)).padding(horizontal = 16.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth().background(s.raised).padding(horizontal = 16.dp, vertical = 8.dp),
         color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp,
     )
 }
@@ -257,44 +261,40 @@ private fun WeekPage(week: Week?, master: Master?, monday: LocalDate, today: Loc
     fun y(t: LocalTime): Dp = minuteHeight * (t.toSecondOfDay() / 60 - startMin)
 
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().padding(end = 6.dp, bottom = 4.dp)) {
+        Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, end = 12.dp, bottom = 8.dp)) {
             Spacer(Modifier.width(gutter))
             days.forEach { d ->
                 val isToday = d == today
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(d.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, de).removeSuffix("."), fontSize = 12.sp,
-                        color = if (isToday) MaterialTheme.colorScheme.primary else s.muted, fontWeight = FontWeight.Medium)
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(d.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, de).removeSuffix("."), fontSize = 12.sp, lineHeight = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Box(
-                        Modifier.size(26.dp).background(if (isToday) MaterialTheme.colorScheme.primary else Color.Transparent, RectangleShape),
+                        Modifier.size(32.dp, 28.dp).background(if (isToday) s.accent else Color.Transparent, RoundedCornerShape(6.dp)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("${d.dayOfMonth}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
-                            color = if (isToday) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+                        Text("${d.dayOfMonth}", fontSize = 16.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium,
+                            color = if (isToday) s.onAccent else MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
         }
         HorizontalDivider(color = s.line)
         Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            Row(Modifier.fillMaxWidth().height(minuteHeight * total + 8.dp).padding(top = 4.dp, end = 6.dp)) {
+            Row(Modifier.fillMaxWidth().height(minuteHeight * total + 12.dp).padding(start = 16.dp, top = 8.dp, end = 12.dp)) {
                 Box(Modifier.width(gutter).fillMaxHeight()) {
                     units.forEachIndexed { i, u ->
-                        Column(Modifier.offset(y = y(u.start)).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("${i + 1}", fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(hm.format(u.start), fontSize = 8.sp, lineHeight = 10.sp, color = s.muted)
+                        Column(Modifier.offset(y = y(u.start))) {
+                            Text("${i + 1}", fontSize = 13.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(hm.format(u.start), fontFamily = Mono, fontSize = 11.sp, lineHeight = 14.sp, color = s.muted)
                         }
                     }
                 }
                 days.forEach { d ->
                     BoxWithConstraints(Modifier.weight(1f).fillMaxHeight()) {
                         val w = maxWidth
-                        units.forEach { u ->
-                            Box(Modifier.offset(y = y(u.start)).fillMaxWidth().height(minuteHeight * ((u.end.toSecondOfDay() - u.start.toSecondOfDay()) / 60))
-                                .padding(1.dp).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), RectangleShape))
-                        }
                         val dayPeriods = periods.filter { it.start.toLocalDate() == d }
                         if (dayPeriods.isEmpty()) master?.holiday(d)?.let { name ->
-                            Text(name, Modifier.align(Alignment.Center).padding(4.dp), fontSize = 11.sp, color = s.muted, maxLines = 4)
+                            Text(name, Modifier.align(Alignment.Center).padding(4.dp), fontSize = 11.sp, lineHeight = 14.sp, color = s.muted, maxLines = 4)
                         }
                         lanes(dayPeriods).forEach { pl ->
                             val p = pl.period
@@ -305,26 +305,28 @@ private fun WeekPage(week: Week?, master: Master?, monday: LocalDate, today: Loc
                                     .padding(1.5.dp),
                             ) { Cell(p, master, pl.lanes == 1, p.ids.any { it in fresh }, onHide, onTap) }
                         }
-                        if (d == today && now.toLocalTime() > first && now.toLocalTime() < last) {
-                            Box(Modifier.offset(y = y(now.toLocalTime()) - 1.dp).fillMaxWidth().height(2.dp).background(s.now))
-                            Box(Modifier.offset(x = (-3).dp, y = y(now.toLocalTime()) - 4.dp).size(8.dp).background(s.now, RectangleShape))
-                        }
                     }
                 }
+            }
+            // the Jetzt line runs across the whole week, its dot on the edge of the time column
+            if (today in days && now.toLocalTime() > first && now.toLocalTime() < last) {
+                val at = 8.dp + y(now.toLocalTime())
+                Box(Modifier.padding(start = 16.dp + gutter, end = 12.dp).offset(y = at - 1.dp).fillMaxWidth().height(2.dp).background(s.now))
+                Box(Modifier.offset(x = 16.dp + gutter - 5.dp, y = at - 5.dp).size(10.dp).background(s.now, CircleShape))
             }
         }
     }
 }
 
+/** the block's frame: yellow for a change, light for an exam, a hairline otherwise; Entfall is told by the badge and the fade */
 @Composable
-private fun accentOf(p: Period): Color? {
+private fun frameOf(p: Period): Color {
     val s = LocalSignals.current
     return when {
-        p.cancelled -> s.cancelled
+        p.cancelled -> s.line
         p.isExam -> s.exam
-        p.additional -> s.extra
-        p.irregular -> s.changed
-        else -> null
+        p.additional || p.irregular -> s.changed
+        else -> s.line
     }
 }
 
@@ -332,37 +334,34 @@ private fun accentOf(p: Period): Color? {
 @Composable
 private fun Cell(p: Period, master: Master?, wide: Boolean, isNew: Boolean, onHide: (Period) -> Unit, onTap: (Period) -> Unit) {
     val s = LocalSignals.current
-    val accent = accentOf(p)
-    val stripe = master.subjectColor(p) ?: MaterialTheme.colorScheme.outline
-    val shape = RectangleShape
+    val shape = RoundedCornerShape(6.dp)
     val subject = master.subject(p)
     val room = p.of(Kind.ROOM).joinToString(",") { master.name(it) }
     val teacher = p.of(Kind.TEACHER).joinToString(",") { master.name(it) }
     val tags = tagsFor(p).joinToString(", ") { it.first }
-    Row(
-        Modifier.fillMaxSize().alpha(if (p.projected) 0.5f else 1f).clip(shape)
-            .background(if (p.cancelled) s.cancelled.copy(alpha = 0.07f) else MaterialTheme.colorScheme.surface)
-            .border(if (accent != null) 1.5.dp else 0.5.dp, accent ?: MaterialTheme.colorScheme.outlineVariant, shape)
+    val frame = frameOf(p)
+    Box(
+        Modifier.fillMaxSize().alpha((if (p.projected) 0.5f else 1f) * (if (p.cancelled) 0.55f else 1f)).clip(shape)
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, frame, shape)
             .combinedClickable(onClick = { onTap(p) }, onLongClick = { onHide(p) }, onLongClickLabel = "Fach ausblenden")
             .semantics { contentDescription = "$subject ${hm.format(p.start)}, Raum $room, $teacher. $tags" + (if (isNew) ", neu" else "") + if (p.projected) ", voraussichtlich" else "" },
     ) {
-        Box(Modifier.width(3.dp).fillMaxHeight().background(if (p.cancelled) s.cancelled.copy(alpha = 0.4f) else stripe))
-        Column(Modifier.weight(1f).padding(horizontal = 3.dp, vertical = 2.dp)) {
-            Text(subject, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Clip,
-                textDecoration = if (p.cancelled) TextDecoration.LineThrough else null,
-                color = if (p.cancelled) s.muted else MaterialTheme.colorScheme.onSurface)
-            if (room.isNotBlank()) Text(room, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Clip,
-                color = if (p.of(Kind.ROOM).any { it.changed }) s.changed else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = if (p.of(Kind.ROOM).any { it.changed }) FontWeight.SemiBold else null)
-            if (teacher.isNotBlank()) Text(teacher, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Clip,
-                color = if (p.of(Kind.TEACHER).any { it.changed }) s.changed else s.muted,
-                fontWeight = if (p.of(Kind.TEACHER).any { it.changed }) FontWeight.SemiBold else null)
-            // E5: the course or group name fits in a single-lane block of 56 minutes or more
-            val course = p.lessonText.takeIf { it.isNotBlank() && it != subject }
-            if (wide && course != null && p.end.toLocalTime().toSecondOfDay() - p.start.toLocalTime().toSecondOfDay() >= 56 * 60)
-                Text(course, fontSize = 9.sp, lineHeight = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = s.muted)
+        Column(Modifier.fillMaxSize().padding(horizontal = if (wide) 4.dp else 2.dp, vertical = 3.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (p.subjectId != null) SubjectBadge(p.subjectId, master, cancelled = p.cancelled, small = true)
+            else Text(subject, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Clip)
+            Column {
+                if (room.isNotBlank()) Text(room, fontFamily = Mono, fontSize = 11.sp, lineHeight = 13.sp, maxLines = 1, overflow = TextOverflow.Clip, softWrap = false,
+                    color = if (p.of(Kind.ROOM).any { it.changed }) s.changed else MaterialTheme.colorScheme.onSurfaceVariant)
+                if (teacher.isNotBlank()) Text(teacher, fontFamily = Mono, fontSize = 11.sp, lineHeight = 13.sp, maxLines = 1, overflow = TextOverflow.Clip, softWrap = false,
+                    color = if (p.of(Kind.TEACHER).any { it.changed }) s.changed else MaterialTheme.colorScheme.onSurfaceVariant)
+                // E5: the course or group name fits in a single-lane block of 56 minutes or more
+                val course = p.lessonText.takeIf { it.isNotBlank() && it != subject }
+                if (wide && course != null && p.end.toLocalTime().toSecondOfDay() - p.start.toLocalTime().toSecondOfDay() >= 56 * 60)
+                    Text(course, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = s.muted)
+            }
         }
-        if (isNew) Box(Modifier.padding(3.dp).size(7.dp).background(MaterialTheme.colorScheme.primary, RectangleShape))
+        if (isNew) Box(Modifier.align(Alignment.TopEnd).padding(4.dp).size(6.dp).background(s.accent, CircleShape))
     }
 }
 
@@ -373,7 +372,8 @@ private fun DayPage(week: Week?, master: Master?, day: LocalDate, element: Eleme
     val periods = Derive.blocks(Filter.apply(all, hidden).filter { it.start.toLocalDate() == day })
     if (periods.isEmpty()) return Centered(master?.holiday(day)?.let { "Ferien: $it" } ?: "Keine Stunden an diesem Tag")
     val rows = if (master != null) Derive.dayRows(periods, master) else periods.map { Derive.Row.Lesson(it) }
-    LazyColumn(contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    // fill the page: a pager centres pages that are shorter than itself
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(rows, key = { r -> if (r is Derive.Row.Lesson) r.period.id else (r as Derive.Row.Gap).let { "gap${it.start}-${it.end}" } }) { r ->
             when (r) {
                 is Derive.Row.Lesson -> PeriodRow(r.period, master, element, r.period.ids.any { it in fresh }, onHide, onTap)
@@ -388,25 +388,25 @@ private fun DayPage(week: Week?, master: Master?, day: LocalDate, element: Eleme
 @Composable
 private fun PeriodRow(p: Period, master: Master?, element: Element, isNew: Boolean, onHide: (Period) -> Unit, onTap: (Period) -> Unit) {
     val s = LocalSignals.current
-    val accent = accentOf(p)
-    val shape = RectangleShape
+    val shape = MaterialTheme.shapes.medium
     Row(
         Modifier.fillMaxWidth().alpha(if (p.projected) 0.55f else 1f).clip(shape).background(MaterialTheme.colorScheme.surface)
-            .border(if (accent != null) 1.5.dp else 0.5.dp, accent ?: MaterialTheme.colorScheme.outlineVariant, shape)
+            .border(1.dp, frameOf(p), shape)
             .combinedClickable(onClick = { onTap(p) }, onLongClick = { onHide(p) }, onLongClickLabel = "Fach ausblenden").padding(12.dp),
     ) {
         Column(Modifier.width(64.dp)) {
-            master?.let { Derive.unitLabel(p, it) }?.let { Text(it, fontWeight = FontWeight.SemiBold, fontSize = 13.sp) }
-            if (isNew) Text("neu", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-            Text(hm.format(p.start), fontSize = 12.sp, color = s.muted)
-            Text(hm.format(p.end), fontSize = 12.sp, color = s.muted)
+            master?.let { Derive.unitLabel(p, it) }?.let { Text(it, fontWeight = FontWeight.Medium, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            if (isNew) Text("neu", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = s.accent)
+            Text(hm.format(p.start), fontFamily = Mono, fontSize = 12.sp, color = s.muted)
+            Text(hm.format(p.end), fontFamily = Mono, fontSize = 12.sp, color = s.muted)
         }
-        Box(Modifier.width(3.dp).height(44.dp).background(master.subjectColor(p) ?: MaterialTheme.colorScheme.outline, RectangleShape))
-        Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(master.subject(p, long = true), fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
-                textDecoration = if (p.cancelled) TextDecoration.LineThrough else null,
-                color = if (p.cancelled) s.muted else MaterialTheme.colorScheme.onSurface)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SubjectBadge(p.subjectId, master, cancelled = p.cancelled)
+                Text(master.subject(p, long = true), fontSize = 16.sp, fontWeight = FontWeight.Medium,
+                    textDecoration = if (p.cancelled) TextDecoration.LineThrough else null,
+                    color = if (p.cancelled) s.muted else MaterialTheme.colorScheme.onSurface)
+            }
             val tags = tagsFor(p)
             if (tags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { tags.forEach { (t, c) -> Tag(t, c) } }
             RefLine(p, Kind.TEACHER, master)
@@ -433,7 +433,7 @@ private fun RefLine(p: Period, kind: Kind, master: Master?, onOpen: ((Element) -
             val target = master?.find(kind, r.id)?.takeIf { r.id != 0L && onOpen != null }
             Text(master.name(r, long = kind == Kind.TEACHER), fontSize = 13.sp,
                 color = if (r.changed) s.changed else MaterialTheme.colorScheme.onSurface,
-                fontWeight = if (r.changed) FontWeight.SemiBold else null,
+                fontWeight = if (r.changed) FontWeight.Medium else null,
                 textDecoration = if (target != null) TextDecoration.Underline else null,
                 modifier = if (target != null) Modifier.clickable(onClickLabel = "Plan öffnen") { onOpen!!(target) } else Modifier)
             if (r.changed) Text(" " + master.name(r, original = true), fontSize = 13.sp, color = s.muted, textDecoration = TextDecoration.LineThrough)
@@ -447,9 +447,12 @@ private fun DetailSheet(repo: Repo, p: Period, master: Master?, onOpen: (Element
     val s = LocalSignals.current
     val extra by produceState<Result<Parse.Extra?>?>(null, p.id) { value = if (p.projected) Result.success(null) else repo.extra(p) }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(master.subject(p, long = true), fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
-                textDecoration = if (p.cancelled) TextDecoration.LineThrough else null)
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 24.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SubjectBadge(p.subjectId, master, cancelled = p.cancelled)
+                Text(master.subject(p, long = true), fontSize = 20.sp, fontWeight = FontWeight.Medium,
+                    textDecoration = if (p.cancelled) TextDecoration.LineThrough else null)
+            }
             val n = master?.let { Derive.unitLabel(p, it) }?.let { "$it, " }.orEmpty()
             Text(n + dayLong.format(p.start) + ", " + hm.format(p.start) + "–" + hm.format(p.end), color = s.muted, fontSize = 14.sp)
             val tags = tagsFor(p)
@@ -488,7 +491,7 @@ private fun DetailSheet(repo: Repo, p: Period, master: Master?, onOpen: (Element
 @Composable
 private fun Labeled(label: String, text: String) {
     Column {
-        Text(label, fontSize = 12.sp, color = LocalSignals.current.muted, fontWeight = FontWeight.Medium)
+        Text(label, fontSize = 12.sp, color = LocalSignals.current.muted)
         Text(text, fontSize = 15.sp)
     }
 }
@@ -509,6 +512,6 @@ private fun NowLine(repo: Repo, element: Element, master: Master?, now: LocalDat
         st.next.isNotEmpty() -> "Jetzt frei, um " + hm.format(st.next.first().start) + ": " + where(st.next.first())
         else -> return
     }
-    Text(text, Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 16.dp, vertical = 8.dp),
-        fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Medium)
+    Text(text, Modifier.fillMaxWidth().background(LocalSignals.current.raised).padding(horizontal = 16.dp, vertical = 8.dp),
+        fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
 }

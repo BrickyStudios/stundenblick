@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -40,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -60,7 +60,7 @@ private fun Page(title: String, onBack: (() -> Unit)?, actions: @Composable () -
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(title.uppercase()) },
+                title = { Text(title) },
                 navigationIcon = { if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück") } },
                 actions = { actions() },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
@@ -73,7 +73,7 @@ private fun Page(title: String, onBack: (() -> Unit)?, actions: @Composable () -
 
 @Composable
 private fun Entry(title: String, line: String, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 16.dp)) {
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 16.dp)) {
         Text(title, fontSize = 16.sp, fontWeight = FontWeight.Medium)
         Text(line, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -106,12 +106,12 @@ fun VerlaufScreen(repo: Repo, onBack: () -> Unit) {
     val entries = repo.history.value.asReversed()
     val s = LocalSignals.current
     Page("Änderungsverlauf", onBack) { pad ->
-        if (entries.isEmpty()) Box(Modifier.padding(pad).fillMaxSize().padding(24.dp)) {
+        if (entries.isEmpty()) Box(Modifier.padding(pad).fillMaxSize().padding(16.dp)) {
             Text("Noch keine Änderungen bemerkt. Stundenblick vergleicht deinen Plan bei jedem Laden und, mit Meldungen, jede Stunde.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(bottom = 24.dp)) {
             items(entries, key = { "${it.id}${it.at}${it.text}" }) { e ->
-                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.Top) {
-                    Box(Modifier.padding(top = 7.dp).size(8.dp).background(if (e.seen) MaterialTheme.colorScheme.outlineVariant else MaterialTheme.colorScheme.primary, RectangleShape)
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.Top) {
+                    Box(Modifier.padding(top = 7.dp).size(8.dp).background(if (e.seen) s.raised else s.accent, CircleShape)
                         .semantics { contentDescription = if (e.seen) "" else "neu" })
                     Column(Modifier.padding(start = 12.dp)) {
                         Text(e.text, fontSize = 15.sp)
@@ -135,7 +135,7 @@ fun RoomFinderScreen(repo: Repo, onBack: () -> Unit) {
     LaunchedEffect(chosen.map { it.id }, monday) { chosen.forEach { repo.load(it, monday, maxAgeMs = 7 * 24 * 3600_000L) } }
     val s = LocalSignals.current
     Page("Raumfinder", onBack, actions = { TextButton(onClick = { picking = true }) { Text("Räume wählen") } }) { pad ->
-        if (chosen.isEmpty()) Column(Modifier.padding(pad).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (chosen.isEmpty()) Column(Modifier.padding(pad).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Wähl die Räume, die dich interessieren, zum Beispiel Lernräume oder Fachräume. Stundenblick lädt jeden höchstens einmal pro Woche.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             TextButton(onClick = { picking = true }) { Text("Räume wählen") }
@@ -150,10 +150,10 @@ fun RoomFinderScreen(repo: Repo, onBack: () -> Unit) {
                     st?.freeUntil != null -> "frei bis ${hm.format(st.freeUntil)}" to true
                     else -> "heute frei" to true
                 }
-                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(10.dp).background(when (free) { true -> MaterialTheme.colorScheme.primary; false -> s.cancelled; null -> MaterialTheme.colorScheme.outlineVariant }, RectangleShape))
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(10.dp).background(when (free) { true -> MaterialTheme.colorScheme.onSurface; false -> s.cancelled; null -> s.raised }, CircleShape))
                     Column(Modifier.padding(start = 12.dp).weight(1f)) {
-                        Text(room.name, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text(room.name, fontSize = 16.sp, fontWeight = FontWeight.Medium, fontFamily = Mono)
                         Text(line, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }

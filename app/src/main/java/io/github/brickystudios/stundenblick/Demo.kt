@@ -19,10 +19,10 @@ object Demo {
         17L to ("GÖK" to ("Gül" to "Gökçe")), 18L to ("HAN" to ("Hanna" to "Hansen")),
     )
     private val subjects = listOf(
-        21L to Triple("D", "Deutsch", "#f4a6a6"), 22L to Triple("M", "Mathematik", "#9ec5fe"), 23L to Triple("E", "Englisch", "#ffd59e"),
-        24L to Triple("Bio", "Biologie", "#b8e0c2"), 25L to Triple("Ph", "Physik", "#c9b6f2"), 26L to Triple("Ge", "Geschichte", "#e6d3b3"),
-        27L to Triple("Mu", "Musik", "#f7c6e0"), 28L to Triple("Sp", "Sport", "#bfe3f0"), 29L to Triple("Inf", "Informatik", "#d6d6d6"),
-        30L to Triple("PGW", "Politik/Gesellschaft/Wirtschaft", "#f0e4a0"),
+        21L to Triple("D", "Deutsch", "#ff7b7f"), 22L to Triple("M", "Mathematik", "#6aa0ff"), 23L to Triple("E", "Englisch", "#ffbe5c"),
+        24L to Triple("Bio", "Biologie", "#74c97a"), 25L to Triple("Ph", "Physik", "#b392ff"), 26L to Triple("Ge", "Geschichte", "#c9a27e"),
+        27L to Triple("Mu", "Musik", "#ff8fc7"), 28L to Triple("Sp", "Sport", "#6fd0f0"), 29L to Triple("Inf", "Informatik", "#a8b0bd"),
+        30L to Triple("PGW", "Politik/Gesellschaft/Wirtschaft", "#e8d35a"),
     )
     private val rooms = listOf(31L to "A101", 32L to "A102", 33L to "B204", 34L to "B205", 35L to "NW1", 36L to "NW2", 37L to "Halle", 38L to "Aula")
 
