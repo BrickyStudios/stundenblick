@@ -21,4 +21,14 @@ class BadgeTest {
     @Test fun lightColoursStayAsTheSchoolSetThem() {
         listOf(0xFF6AA0FF, 0xFFFF7B7F, 0xFF9EC5FE, 0xFFFFFF80).forEach { assertEquals(Color(it), readableOnDark(Color(it))) }
     }
+
+    @Test fun smallBadgesShrinkToFitInsteadOfClipping() {
+        // a half-width block leaves about 26 dp for the letters: "Bio" must fit, not be cut to "Bic"
+        val sp = badgeFontSp("Bio", 26f, 1f)
+        assertTrue(sp * 0.6f * 3 <= 26f)
+        assertEquals(12f, badgeFontSp("M", 26f, 1f))
+        assertEquals(8f, badgeFontSp("PGWXYZ", 10f, 1f))
+        // larger system font: the sp shrinks so the dp width still fits
+        assertTrue(badgeFontSp("Bio", 26f, 1.3f) < sp)
+    }
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,12 +26,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -165,6 +168,22 @@ fun Master?.subjectColor(id: Long): Color =
 /** The signature: a subject as a line badge, like the line number on a departure board. */
 @Composable
 fun SubjectBadge(name: String, color: Color, modifier: Modifier = Modifier, cancelled: Boolean = false, small: Boolean = false) {
+    if (!small) return BadgeBox(name, color, modifier, cancelled, small, 13f)
+    // Small badges sit in plan blocks that can be half a day column wide: shrink the letters
+    // until the name fits instead of clipping "Bio" to "Bic". Mono, so the width is known.
+    BoxWithConstraints(modifier) {
+        val room = maxWidth - 8.dp
+        val fit = if (maxWidth == Dp.Infinity) 12f else badgeFontSp(name, room.value, LocalDensity.current.fontScale)
+        BadgeBox(name, color, Modifier, cancelled, small, fit)
+    }
+}
+
+/** sp for a small badge's name to fit [roomDp]: JetBrains Mono advances 0.6 em per letter; 8 to 12 sp */
+fun badgeFontSp(name: String, roomDp: Float, fontScale: Float): Float =
+    (roomDp / (name.length.coerceAtLeast(1) * 0.62f) / fontScale).coerceIn(8f, 12f)
+
+@Composable
+private fun BadgeBox(name: String, color: Color, modifier: Modifier, cancelled: Boolean, small: Boolean, fontSp: Float) {
     val s = LocalSignals.current
     val shape = RoundedCornerShape(5.dp)
     Box(
@@ -174,7 +193,7 @@ fun SubjectBadge(name: String, color: Color, modifier: Modifier = Modifier, canc
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            name, fontFamily = Mono, fontWeight = FontWeight.SemiBold, fontSize = if (small) 12.sp else 13.sp, lineHeight = if (small) 12.sp else 13.sp,
+            name, fontFamily = Mono, fontWeight = FontWeight.SemiBold, fontSize = fontSp.sp, lineHeight = fontSp.sp,
             color = if (cancelled) s.cancelled else BadgeInk, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
             textDecoration = if (cancelled) TextDecoration.LineThrough else null,
         )
