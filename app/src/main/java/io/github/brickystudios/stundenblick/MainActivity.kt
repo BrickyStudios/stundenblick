@@ -161,7 +161,7 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
                             NavigationBarItem(
                                 selected = tab == id, onClick = { tab = id },
                                 icon = { if (count > 0) BadgedBox(badge = { Badge { Text("$count") } }) { Icon(icon, null) } else Icon(icon, null) },
-                                label = { Text(label, fontWeight = if (tab == id) FontWeight.Bold else FontWeight.Normal) },
+                                label = { Text(label, fontWeight = if (tab == id) FontWeight.SemiBold else FontWeight.Normal) },
                                 // the M3 indicator is a pill; the bill marks the current tab by ink and weight alone
                                 colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent),
                             )
@@ -205,7 +205,7 @@ private fun App(repo: Repo, link: androidx.compose.runtime.MutableState<SetSchoo
 /** F3: Untis named no own timetable (anonymous access, some parent accounts). One tap fixes it. */
 @Composable
 private fun OwnMissing(profile: Profile, onSetOwn: () -> Unit, onPick: () -> Unit, onSettings: () -> Unit) {
-    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Spacer(Modifier.height(24.dp))
         PosterTitle("Kein eigener Plan")
         Text(
@@ -224,7 +224,7 @@ private fun LinkConfirm(repo: Repo, l: SetSchool, onDone: () -> Unit) {
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Spacer(Modifier.height(24.dp))
         Text("Mit diesem Untis-Zugang anmelden?", fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
         Card {
@@ -293,7 +293,7 @@ private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
         val s = school
         if (s == null) {
             Card {
-                Text("Mit QR-Code aus WebUntis", fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                Text("Mit QR-Code aus WebUntis", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                 Text("Der sicherste Weg, auch mit Zwei-Faktor-Anmeldung: WebUntis im Browser öffnen → Profil → Freigaben → „Anzeigen“. Scanne den QR-Code mit der Kamera-App, sie öffnet Stundenblick. Oder kopiere den Link darunter und füge ihn hier ein.",
                     fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(pasted, { pasted = it }, Modifier.fillMaxWidth(), placeholder = { Text("untis://setschool?…") }, singleLine = true)
@@ -303,7 +303,7 @@ private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
                 }) { Text("Link übernehmen") }
             }
             Card {
-                Text("Schule suchen", fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                Text("Schule suchen", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                 OutlinedTextField(
                     query, { query = it }, Modifier.fillMaxWidth(), placeholder = { Text("Name oder Ort der Schule") }, singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -311,7 +311,7 @@ private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
                 )
                 Button(shape = RectangleShape, enabled = query.trim().length >= 3 && !busy, onClick = { run { results = withContext(Dispatchers.IO) { Untis.searchSchools(query.trim()) } } }) { Text("Suchen") }
                 results?.let { list ->
-                    if (list.isEmpty()) Text("Keine Schule gefunden.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (list.isEmpty()) Text("Keine Schule gefunden", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     list.forEach { r ->
                         HorizontalDivider(color = LocalSignals.current.line)
                         Column(Modifier.fillMaxWidth().clickable { school = r; error = null }.padding(vertical = 8.dp)) {
@@ -326,7 +326,7 @@ private fun LoginScreen(repo: Repo, onDone: () -> Unit) {
                 fontSize = 12.sp, color = LocalSignals.current.muted)
         } else {
             Card {
-                Text(s.name, fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                Text(s.name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                 if (s.address.isNotBlank()) Text(s.address, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(user, { user = it }, Modifier.fillMaxWidth(), label = { Text("Benutzername") }, singleLine = true)
                 OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text("Passwort") }, singleLine = true,

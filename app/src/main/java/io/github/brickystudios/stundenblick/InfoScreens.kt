@@ -97,7 +97,7 @@ fun ExamsScreen(repo: Repo, onBack: () -> Unit) {
         val subject = e.subjectId?.let { m?.find(Kind.SUBJECT, it) }
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(subject?.let { it.longName.ifBlank { it.name } } ?: e.name.ifBlank { "Klausur" }, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                Text(subject?.let { it.longName.ifBlank { it.name } } ?: e.name.ifBlank { "Klausur" }, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                 Tag(daysUntil(e.start.toLocalDate()), LocalSignals.current.exam)
             }
             Text("${day.format(e.start)}, ${hm.format(e.start)}–${hm.format(e.end)}" + e.roomIds.joinToString { m?.find(Kind.ROOM, it)?.name ?: "" }.let { if (it.isBlank()) "" else ", Raum $it" },
@@ -113,7 +113,7 @@ fun HomeworkScreen(repo: Repo, onBack: () -> Unit) {
     val m = repo.master.value
     val hidden = repo.own.value?.let { repo.hidden(it) }.orEmpty()
     val done = repo.homeworkDone.value
-    InfoPage(repo, Repo.Info.HOMEWORK, "Hausaufgaben", "Keine Hausaufgaben eingetragen.", onBack,
+    InfoPage(repo, Repo.Info.HOMEWORK, "Hausaufgaben", "Keine Hausaufgaben eingetragen", onBack,
         { InfoParse.homework(it).filter { h -> h.subjectId == null || h.subjectId !in hidden } }) { h ->
         val finished = h.completed || h.id in done
         Row(Modifier.fillMaxWidth().clickable { repo.toggleDone(h.id) }.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.Top) {

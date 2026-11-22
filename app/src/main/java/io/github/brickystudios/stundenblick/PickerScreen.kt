@@ -91,24 +91,24 @@ fun PickerScreen(repo: Repo, ownMode: Boolean, onBack: () -> Unit, onPick: (Elem
             LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
                 val own = repo.own.value
                 if (!ownMode && own != null && query.isBlank()) item {
-                    Row(Modifier.fillMaxWidth().clickable { onPick(own) }.padding(horizontal = 20.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Home, null, tint = MaterialTheme.colorScheme.primary)
-                        Text("  Mein Plan", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                    Row(Modifier.fillMaxWidth().clickable { onPick(own) }.padding(horizontal = 20.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Home, null, Modifier.padding(end = 12.dp), tint = MaterialTheme.colorScheme.primary)
+                        Text("Mein Plan", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                     }
                     HorizontalDivider(color = LocalSignals.current.line)
                 }
                 if (list.isEmpty()) item {
                     Text(
                         when {
-                            master == null -> "Noch keine Schuldaten geladen."
+                            master == null -> "Noch keine Schuldaten geladen"
                             tab == "FAV" && q.isEmpty() -> "Noch keine Favoriten. Tipp auf den Stern neben einem Plan."
-                            else -> "Nichts gefunden."
+                            else -> "Nichts gefunden"
                         },
                         Modifier.padding(24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 items(list, key = { it.key }) { e ->
-                    Row(Modifier.fillMaxWidth().clickable { onPick(e) }.padding(start = 20.dp, end = 8.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().clickable { onPick(e) }.padding(start = 20.dp, end = 8.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(e.name, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                             if (e.longName.isNotBlank() && e.longName != e.name) Text(e.longName, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)

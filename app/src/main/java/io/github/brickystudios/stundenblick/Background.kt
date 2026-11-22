@@ -187,7 +187,7 @@ class DayWidget : AppWidgetProvider() {
                     else -> ""
                 }
                 "$n  $subject  $room$mark"
-            }.ifEmpty { listOf("Keine Stunden.") }
+            }.ifEmpty { listOf("Keine Stunden") }
             // D4: the next exam within two weeks, from the cache the app keeps
             val exam = repo.infoOf(Repo.Info.EXAMS).data?.let { runCatching { InfoParse.exams(it) }.getOrNull() }.orEmpty()
                 .filter { !it.start.toLocalDate().isBefore(today) && (it.subjectId == null || it.subjectId !in hidden) }.minByOrNull { it.start }

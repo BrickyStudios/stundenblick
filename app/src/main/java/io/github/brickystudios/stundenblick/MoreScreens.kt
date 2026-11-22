@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -72,8 +73,8 @@ private fun Page(title: String, onBack: (() -> Unit)?, actions: @Composable () -
 
 @Composable
 private fun Entry(title: String, line: String, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 14.dp)) {
-        Text(title, fontSize = 17.sp, fontWeight = FontWeight.Medium)
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 16.dp)) {
+        Text(title, fontSize = 16.sp, fontWeight = FontWeight.Medium)
         Text(line, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     HorizontalDivider(color = LocalSignals.current.line)
@@ -149,10 +150,10 @@ fun RoomFinderScreen(repo: Repo, onBack: () -> Unit) {
                     st?.freeUntil != null -> "frei bis ${hm.format(st.freeUntil)}" to true
                     else -> "heute frei" to true
                 }
-                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(10.dp).background(when (free) { true -> MaterialTheme.colorScheme.primary; false -> s.cancelled; null -> MaterialTheme.colorScheme.outlineVariant }, RectangleShape))
-                    Column(Modifier.padding(start = 14.dp).weight(1f)) {
-                        Text(room.name, fontSize = 17.sp, fontWeight = FontWeight.Medium)
+                    Column(Modifier.padding(start = 12.dp).weight(1f)) {
+                        Text(room.name, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                         Text(line, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -176,8 +177,8 @@ private fun RoomPicker(master: Master, initial: Set<Long>, onDone: (Set<Long>) -
                 OutlinedTextField(q, { q = it }, Modifier.fillMaxWidth(), placeholder = { Text("Suchen") }, singleLine = true)
                 LazyColumn(Modifier.padding(top = 8.dp)) {
                     items(rooms.take(300), key = { it.id }) { r ->
-                        Row(Modifier.fillMaxWidth().clickable { sel = if (r.id in sel) sel - r.id else sel + r.id }, verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(r.id in sel, null)
+                        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { sel = if (r.id in sel) sel - r.id else sel + r.id }, verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(r.id in sel, null, Modifier.padding(end = 12.dp))
                             Text(r.title, fontSize = 15.sp)
                         }
                     }

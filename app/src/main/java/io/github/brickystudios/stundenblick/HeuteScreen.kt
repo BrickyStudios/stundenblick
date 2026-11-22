@@ -65,7 +65,7 @@ fun HeuteScreen(repo: Repo, onOpenPlan: () -> Unit, onHistory: () -> Unit, onSet
     val s = LocalSignals.current
 
     if (own == null) {
-        Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Spacer(Modifier.height(24.dp))
             PosterTitle("Heute")
             Text("Für die Heute-Seite braucht Stundenblick deinen eigenen Plan.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -136,9 +136,9 @@ fun HeuteScreen(repo: Repo, onOpenPlan: () -> Unit, onHistory: () -> Unit, onSet
             messages.forEach { msg ->
                 Card {
                     Label("Nachricht der Schule")
-                    Text(msg.subject, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    Text(msg.subject, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     if (msg.text.isNotBlank()) Text(msg.text, fontSize = 15.sp)
-                    if (msg.attachments > 0) Text("${msg.attachments} Anhang/Anhänge in WebUntis", fontSize = 13.sp, color = s.muted)
+                    if (msg.attachments > 0) Text("${msg.attachments} " + (if (msg.attachments == 1) "Anhang" else "Anhänge") + " in WebUntis", fontSize = 13.sp, color = s.muted)
                 }
             }
 
@@ -170,7 +170,7 @@ fun HeuteScreen(repo: Repo, onOpenPlan: () -> Unit, onHistory: () -> Unit, onSet
                     Label("$name, ${dm.format(nextDay)}")
                     when {
                         next == null -> Text("Noch nicht geladen. Zieh nach unten.", color = s.muted)
-                        next.isEmpty() -> Text("Keine Stunden.", color = s.muted)
+                        next.isEmpty() -> Text("Keine Stunden", color = s.muted)
                         else -> {
                             val first = next.filter { !it.cancelled }.minByOrNull { it.start }
                             if (first != null) Text("Beginn ${hm.format(first.start)}, Schluss ${hm.format(next.filter { !it.cancelled }.maxOf { it.end })}", color = s.muted, fontSize = 14.sp)
@@ -199,7 +199,7 @@ private fun Card(modifier: Modifier = Modifier, content: @Composable () -> Unit)
     Column(
         modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RectangleShape)
             .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant, RectangleShape).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) { content() }
 }
 
@@ -223,11 +223,11 @@ fun LessonLine(p: Period, master: Master?, big: Boolean) {
                 p.of(Kind.ROOM).forEach { r -> add((master?.find(Kind.ROOM, r.id)?.name ?: "?") to r.changed) }
                 p.of(Kind.TEACHER).forEach { r -> add((if (r.id == 0L) "offen" else master?.find(Kind.TEACHER, r.id)?.let { it.longName.ifBlank { it.name } } ?: "?") to r.changed) }
             }
-            if (bits.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (bits.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 bits.forEach { (t, changed) -> Text(t, fontSize = 14.sp, color = if (changed) s.changed else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = if (changed) FontWeight.SemiBold else null) }
             }
             val tags = tagsFor(p)
-            if (tags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 2.dp)) { tags.forEach { (t, c) -> Tag(t, c) } }
+            if (tags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 2.dp)) { tags.forEach { (t, c) -> Tag(t, c) } }
         }
     }
 }
@@ -237,7 +237,7 @@ fun LessonLine(p: Period, master: Master?, big: Boolean) {
 @Composable
 fun WeekLine(c: Derive.WeekCount) {
     val s = LocalSignals.current
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
             c.cancelled to ("Entfall" to s.cancelled),
             c.substituted to ((if (c.substituted == 1) "Vertretung" else "Vertretungen") to s.changed),

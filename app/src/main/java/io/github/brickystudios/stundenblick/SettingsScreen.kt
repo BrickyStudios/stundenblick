@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -88,7 +89,7 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { pad ->
-        Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Section("Konto") {
                 Text(p?.schoolName?.ifBlank { p.school } ?: "—", fontWeight = FontWeight.SemiBold)
                 Text(
@@ -118,13 +119,15 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
                 var hidden by remember(current.key) { mutableStateOf(repo.hidden(current)) }
                 if (subjects.isEmpty()) Text("Öffne den Plan einmal, dann stehen hier seine Fächer.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 else Text("Abgehakt = sichtbar. Für die Oberstufe: Kurse, die du nicht hast, abwählen.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-                subjects.forEach { sub ->
-                    Row(Modifier.fillMaxWidth().clickable {
-                        hidden = if (sub.id in hidden) hidden - sub.id else hidden + sub.id
-                        repo.setHidden(current, hidden)
-                    }, verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(sub.id !in hidden, null)
-                        Text(sub.title, fontSize = 15.sp)
+                Column {
+                    subjects.forEach { sub ->
+                        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable {
+                            hidden = if (sub.id in hidden) hidden - sub.id else hidden + sub.id
+                            repo.setHidden(current, hidden)
+                        }, verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(sub.id !in hidden, null, Modifier.padding(end = 12.dp))
+                            Text(sub.title, fontSize = 15.sp)
+                        }
                     }
                 }
                 if (subjects.isNotEmpty() && subjects.all { it.id in hidden }) Text("Alles ausgeblendet: der Plan bleibt leer.", color = LocalSignals.current.changed, fontSize = 13.sp)
@@ -160,9 +163,9 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
                         android.app.TimePickerDialog(ctx, { _, h, m -> set(h * 60 + m); AlarmLater.fire(ctx) }, start / 60, start % 60, true).show()
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Nur von", fontSize = 15.sp)
-                        TextButton(onClick = { pick(from) { from = it; repo.alarmFrom = it } }) { Text(hm(from), fontSize = 17.sp) }
+                        TextButton(onClick = { pick(from) { from = it; repo.alarmFrom = it } }) { Text(hm(from), fontSize = 16.sp) }
                         Text("bis", fontSize = 15.sp)
-                        TextButton(onClick = { pick(to) { to = it; repo.alarmTo = it } }) { Text(hm(to), fontSize = 17.sp) }
+                        TextButton(onClick = { pick(to) { to = it; repo.alarmTo = it } }) { Text(hm(to), fontSize = 16.sp) }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Nicht während des Unterrichts", Modifier.weight(1f), fontSize = 15.sp)
@@ -224,7 +227,7 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
 private fun Section(title: String, content: @Composable () -> Unit) {
     Column(
         Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RectangleShape).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
         content()

@@ -70,7 +70,7 @@ private val dark = darkColorScheme(
 
 private val narrow = FontFamily(
     Font(R.font.archivo_narrow_400, FontWeight.Normal), Font(R.font.archivo_narrow_500, FontWeight.Medium),
-    Font(R.font.archivo_narrow_600, FontWeight.SemiBold), Font(R.font.archivo_narrow_700, FontWeight.Bold),
+    Font(R.font.archivo_narrow_600, FontWeight.SemiBold),
 )
 
 /** Six Caps: tall poster capitals, only for screen titles; never for labels, buttons or data */

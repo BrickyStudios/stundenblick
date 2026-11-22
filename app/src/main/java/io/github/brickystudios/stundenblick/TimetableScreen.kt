@@ -348,15 +348,15 @@ private fun Cell(p: Period, master: Master?, wide: Boolean, isNew: Boolean, onHi
     ) {
         Box(Modifier.width(3.dp).fillMaxHeight().background(if (p.cancelled) s.cancelled.copy(alpha = 0.4f) else stripe))
         Column(Modifier.weight(1f).padding(horizontal = 3.dp, vertical = 2.dp)) {
-            Text(subject, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Clip,
+            Text(subject, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Clip,
                 textDecoration = if (p.cancelled) TextDecoration.LineThrough else null,
                 color = if (p.cancelled) s.muted else MaterialTheme.colorScheme.onSurface)
             if (room.isNotBlank()) Text(room, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Clip,
                 color = if (p.of(Kind.ROOM).any { it.changed }) s.changed else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = if (p.of(Kind.ROOM).any { it.changed }) FontWeight.Bold else null)
+                fontWeight = if (p.of(Kind.ROOM).any { it.changed }) FontWeight.SemiBold else null)
             if (teacher.isNotBlank()) Text(teacher, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Clip,
                 color = if (p.of(Kind.TEACHER).any { it.changed }) s.changed else s.muted,
-                fontWeight = if (p.of(Kind.TEACHER).any { it.changed }) FontWeight.Bold else null)
+                fontWeight = if (p.of(Kind.TEACHER).any { it.changed }) FontWeight.SemiBold else null)
             // E5: the course or group name fits in a single-lane block of 56 minutes or more
             val course = p.lessonText.takeIf { it.isNotBlank() && it != subject }
             if (wide && course != null && p.end.toLocalTime().toSecondOfDay() - p.start.toLocalTime().toSecondOfDay() >= 56 * 60)
@@ -371,7 +371,7 @@ private fun DayPage(week: Week?, master: Master?, day: LocalDate, element: Eleme
     val all = week?.periods
     if (all == null) return Centered(week?.error ?: "", loading = week?.error == null)
     val periods = Derive.blocks(Filter.apply(all, hidden).filter { it.start.toLocalDate() == day })
-    if (periods.isEmpty()) return Centered(master?.holiday(day)?.let { "Ferien: $it" } ?: "Keine Stunden an diesem Tag.")
+    if (periods.isEmpty()) return Centered(master?.holiday(day)?.let { "Ferien: $it" } ?: "Keine Stunden an diesem Tag")
     val rows = if (master != null) Derive.dayRows(periods, master) else periods.map { Derive.Row.Lesson(it) }
     LazyColumn(contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(rows, key = { r -> if (r is Derive.Row.Lesson) r.period.id else (r as Derive.Row.Gap).let { "gap${it.start}-${it.end}" } }) { r ->
@@ -403,12 +403,12 @@ private fun PeriodRow(p: Period, master: Master?, element: Element, isNew: Boole
         }
         Box(Modifier.width(3.dp).height(44.dp).background(master.subjectColor(p) ?: MaterialTheme.colorScheme.outline, RectangleShape))
         Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(master.subject(p, long = true), fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
                 textDecoration = if (p.cancelled) TextDecoration.LineThrough else null,
                 color = if (p.cancelled) s.muted else MaterialTheme.colorScheme.onSurface)
             val tags = tagsFor(p)
-            if (tags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) { tags.forEach { (t, c) -> Tag(t, c) } }
+            if (tags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { tags.forEach { (t, c) -> Tag(t, c) } }
             RefLine(p, Kind.TEACHER, master)
             RefLine(p, Kind.ROOM, master)
             if (element.kind != Kind.CLASS && element.kind != Kind.STUDENT) RefLine(p, Kind.CLASS, master)
@@ -448,12 +448,12 @@ private fun DetailSheet(repo: Repo, p: Period, master: Master?, onOpen: (Element
     val extra by produceState<Result<Parse.Extra?>?>(null, p.id) { value = if (p.projected) Result.success(null) else repo.extra(p) }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(master.subject(p, long = true), fontSize = 22.sp, fontWeight = FontWeight.SemiBold,
+            Text(master.subject(p, long = true), fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
                 textDecoration = if (p.cancelled) TextDecoration.LineThrough else null)
             val n = master?.let { Derive.unitLabel(p, it) }?.let { "$it, " }.orEmpty()
             Text(n + dayLong.format(p.start) + ", " + hm.format(p.start) + "–" + hm.format(p.end), color = s.muted, fontSize = 14.sp)
             val tags = tagsFor(p)
-            if (tags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) { tags.forEach { (t, c) -> Tag(t, c) } }
+            if (tags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { tags.forEach { (t, c) -> Tag(t, c) } }
             if (p.projected) Text("Voraussichtlich: so lag die Stunde in einer früheren Woche. Deine Schule zeigt diesen Tag noch nicht, Ausfälle und Vertretungen fehlen also noch.",
                 fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             HorizontalDivider(color = s.line)
@@ -471,7 +471,7 @@ private fun DetailSheet(repo: Repo, p: Period, master: Master?, onOpen: (Element
                 else -> r.fold(
                     { x ->
                         if (x == null || (x.topic.isBlank() && x.homework.isEmpty() && x.info.isBlank())) {
-                            Text("Keine weiteren Angaben von der Schule.", color = s.muted, fontSize = 14.sp)
+                            Text("Keine weiteren Angaben von der Schule", color = s.muted, fontSize = 14.sp)
                         } else {
                             if (x.topic.isNotBlank()) Labeled("Stundeninhalt", x.topic)
                             x.homework.forEach { Labeled("Hausaufgabe", it) }

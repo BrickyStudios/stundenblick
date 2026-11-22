@@ -106,7 +106,7 @@ fun SchoolScreen(repo: Repo, onOpen: (Element) -> Unit, onRooms: () -> Unit) {
         Column(Modifier.padding(pad).fillMaxSize()) {
             if (st.running) Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
                 Text("Lade Klassenpläne ${st.done} von ${st.total} …", fontSize = 13.sp, color = s.muted)
-                LinearProgressIndicator({ if (st.total == 0) 0f else st.done / st.total.toFloat() }, Modifier.fillMaxWidth().padding(vertical = 6.dp))
+                LinearProgressIndicator({ if (st.total == 0) 0f else st.done / st.total.toFloat() }, Modifier.fillMaxWidth().padding(vertical = 8.dp))
                 TextButton(onClick = repo::cancelSchool) { Text("Abbrechen") }
             }
             when {
@@ -116,7 +116,7 @@ fun SchoolScreen(repo: Repo, onOpen: (Element) -> Unit, onRooms: () -> Unit) {
                     OutlinedButton(shape = RectangleShape, onClick = onRooms) { Text("Raumfinder mit einzelnen Räumen") }
                 }
                 all == null -> Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Freie Räume und wer wo Unterricht hat, für die ganze Schule.", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Freie Räume und wer wo Unterricht hat, für die ganze Schule", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
                     Text("Dafür lädt Stundenblick die Wochenpläne aller $classes Klassen, eine Anfrage pro Klasse. Danach bleiben sie 6 Stunden gespeichert, auch offline.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (!st.running) Button(shape = RectangleShape, onClick = { scope.launch { repo.loadSchool(monday) } }) { Text("Klassenpläne laden") }
@@ -127,7 +127,7 @@ fun SchoolScreen(repo: Repo, onOpen: (Element) -> Unit, onRooms: () -> Unit) {
                         TextButton(onClick = { scope.launch { repo.loadSchool(monday) } }) { Text("Weiterladen") }
                     }
                     val units = master.units
-                    Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         units.forEachIndexed { i, u ->
                             FilterChip(unit == i, { unit = i }, { Text("${i + 1}. ${hm.format(u.start)}") })
                         }
@@ -149,7 +149,7 @@ fun SchoolScreen(repo: Repo, onOpen: (Element) -> Unit, onRooms: () -> Unit) {
                     if (mode == "rooms") {
                         val shown = free.filter { q.isEmpty() || it.room.name.contains(q, true) || it.room.longName.contains(q, true) }
                         LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-                            if (shown.isEmpty()) item { Text("Kein freier Raum.", Modifier.padding(24.dp), color = s.muted) }
+                            if (shown.isEmpty()) item { Text("Kein freier Raum", Modifier.padding(24.dp), color = s.muted) }
                             items(shown, key = { it.room.id }) { f -> FreeRoomRow(f) { onOpen(f.room) } }
                         }
                     } else {
@@ -159,7 +159,7 @@ fun SchoolScreen(repo: Repo, onOpen: (Element) -> Unit, onRooms: () -> Unit) {
                                 p.lessonText.contains(q, true)
                         }.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { p -> names(p, Kind.CLASS).firstOrNull()?.name ?: "" })
                         LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-                            if (shown.isEmpty()) item { Text("Keine Stunde gefunden.", Modifier.padding(24.dp), color = s.muted) }
+                            if (shown.isEmpty()) item { Text("Keine Stunde gefunden", Modifier.padding(24.dp), color = s.muted) }
                             items(shown, key = { it.id }) { p -> WhoRow(p, master, onOpen) }
                         }
                     }
@@ -173,9 +173,9 @@ fun SchoolScreen(repo: Repo, onOpen: (Element) -> Unit, onRooms: () -> Unit) {
 @Composable
 private fun FreeRoomRow(f: Derive.FreeRoom, onClick: () -> Unit) {
     val s = LocalSignals.current
-    Row(Modifier.fillMaxWidth().clickable(onClickLabel = "Raumplan öffnen", onClick = onClick).padding(horizontal = 20.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().clickable(onClickLabel = "Raumplan öffnen", onClick = onClick).padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(f.room.name, fontSize = 17.sp, fontWeight = FontWeight.Medium)
+            Text(f.room.name, fontSize = 16.sp, fontWeight = FontWeight.Medium)
             if (f.room.longName.isNotBlank() && f.room.longName != f.room.name) Text(f.room.longName, fontSize = 13.sp, color = s.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Column(horizontalAlignment = Alignment.End) {
@@ -192,18 +192,18 @@ private fun WhoRow(p: Period, master: Master, onOpen: (Element) -> Unit) {
     val s = LocalSignals.current
     val klass = p.of(Kind.CLASS).mapNotNull { master.find(Kind.CLASS, it.id) }
     val subject = p.of(Kind.SUBJECT).firstOrNull()?.let { master.find(Kind.SUBJECT, it.id) }
-    Row(Modifier.fillMaxWidth().clickable(onClickLabel = "Klassenplan öffnen") { klass.firstOrNull()?.let(onOpen) }.padding(horizontal = 20.dp, vertical = 10.dp), verticalAlignment = Alignment.Top) {
+    Row(Modifier.fillMaxWidth().clickable(onClickLabel = "Klassenplan öffnen") { klass.firstOrNull()?.let(onOpen) }.padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.Top) {
         Text(klass.joinToString(", ") { it.name }.ifBlank { "—" }, Modifier.width(76.dp), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Column(Modifier.weight(1f)) {
             Text((subject?.let { it.longName.ifBlank { it.name } } ?: p.lessonText.ifBlank { "Stunde" }) + if (p.lessonText.isNotBlank() && subject != null && p.lessonText != subject.name) " (${p.lessonText})" else "",
                 fontSize = 15.sp, textDecoration = if (p.cancelled) TextDecoration.LineThrough else null, color = if (p.cancelled) s.muted else MaterialTheme.colorScheme.onSurface)
             val bits = p.of(Kind.TEACHER).map { r -> (if (r.id == 0L) "offen" else master.find(Kind.TEACHER, r.id)?.name ?: "?") to r.changed } +
                 p.of(Kind.ROOM).map { r -> (master.find(Kind.ROOM, r.id)?.name ?: "?") to r.changed }
-            if (bits.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (bits.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 bits.forEach { (t, changed) -> Text(t, fontSize = 13.sp, color = if (changed) s.changed else s.muted, fontWeight = if (changed) FontWeight.SemiBold else null) }
             }
             val tags = tagsFor(p)
-            if (tags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) { tags.forEach { (t, c) -> Tag(t, c) } }
+            if (tags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { tags.forEach { (t, c) -> Tag(t, c) } }
         }
     }
     HorizontalDivider(color = s.line)
