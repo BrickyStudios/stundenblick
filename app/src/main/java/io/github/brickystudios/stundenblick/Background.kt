@@ -78,7 +78,10 @@ class ChangeJob : JobService() {
             nm.notify(System.currentTimeMillis().toInt(), n)
         }
 
-        /** Rings like an alarm clock (alarm volume, also on silent) until the user taps, swipes it away or opens the shade. */
+        /**
+         * Rings like an alarm clock (alarm volume, also on silent) until the user taps, swipes it away or opens the shade,
+         * at most [AUTO_OFF_MS]; then [AlarmOff] keeps the notice and ends the sound.
+         */
         fun ring(ctx: Context, messages: List<String>) {
             if (android.os.Build.VERSION.SDK_INT >= 33 && ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
             val nm = ctx.getSystemService(NotificationManager::class.java)
@@ -101,10 +104,40 @@ class ChangeJob : JobService() {
                 .build()
             n.flags = n.flags or Notification.FLAG_INSISTENT // repeats the sound until the alarm is dealt with
             nm.notify(ALARM_NOTE, n)
+            val off = PendingIntent.getBroadcast(ctx, 9, Intent(ctx, AlarmOff::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            wakeAt(ctx, System.currentTimeMillis() + AUTO_OFF_MS, off)
+        }
+
+        /** the alarm notification while it still rings, else null */
+        fun ringing(ctx: Context) = ctx.getSystemService(NotificationManager::class.java).activeNotifications
+            .firstOrNull { it.id == ALARM_NOTE && it.notification.flags and Notification.FLAG_INSISTENT != 0 }
+
+        /** on time like an alarm clock, also in Doze; without the exact-alarm right Android may be up to an hour late */
+        fun wakeAt(ctx: Context, ms: Long, pi: PendingIntent) {
+            val am = ctx.getSystemService(android.app.AlarmManager::class.java)
+            if (android.os.Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms()) am.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, ms, pi)
+            else am.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, ms, pi)
         }
 
         private const val ALARM = "alarm"
         const val ALARM_NOTE = 4712
+        /** like the Android clock: whoever has not switched it off by then is probably on the way to school */
+        const val AUTO_OFF_MS = 10 * 60_000L
+    }
+}
+
+/** Ends a ringing alarm after [ChangeJob.AUTO_OFF_MS]. The notice stays in the shade, silent and without the alarm screen. */
+class AlarmOff : android.content.BroadcastReceiver() {
+    override fun onReceive(ctx: Context, intent: Intent) {
+        val n = ChangeJob.ringing(ctx)?.notification ?: return // already switched off, tapped or swiped away
+        val nm = ctx.getSystemService(NotificationManager::class.java)
+        nm.cancel(ChangeJob.ALARM_NOTE) // only a cancel stops an insistent sound; an update would keep it ringing
+        val quiet = Notification.Builder.recoverBuilder(ctx, n)
+            .setFullScreenIntent(null, false)
+            .setGroup("quiet").setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY) // a group child that may not alert: no sound, no banner
+            .build()
+        quiet.flags = quiet.flags and Notification.FLAG_INSISTENT.inv()
+        nm.notify(ChangeJob.ALARM_NOTE, quiet)
     }
 }
 
@@ -139,10 +172,7 @@ class AlarmLater : android.content.BroadcastReceiver() {
                 ChangeJob.ring(ctx, due.map { Changes.describe(it.second, master!!) })
             } else {
                 repo.alarmPending = due.map { it.first }.toSet()
-                // on time like an alarm clock, also in Doze; without the exact-alarm right Android may ring up to an hour late
-                val ms = at.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-                if (android.os.Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms()) am.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, ms, pi)
-                else am.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, ms, pi)
+                ChangeJob.wakeAt(ctx, at.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(), pi)
             }
         }
     }

@@ -61,8 +61,19 @@ class AlarmActivity : ComponentActivity() {
         lines.value = intent.lines()
     }
 
+    private var resumed = false
+
+    override fun onResume() {
+        super.onResume()
+        // back after the auto-off or a swipe: nothing left to switch off. Not on the first resume, the
+        // Probealarm starts this screen right after posting and the notice may not be listed yet.
+        if (resumed && ChangeJob.ringing(this) == null) finish()
+        resumed = true
+    }
+
     private fun stop() {
-        getSystemService(NotificationManager::class.java).cancel(ChangeJob.ALARM_NOTE)
+        // after the auto-off the silent notice stays; "Aus" then only closes this screen
+        if (ChangeJob.ringing(this) != null) getSystemService(NotificationManager::class.java).cancel(ChangeJob.ALARM_NOTE)
         finish()
     }
 

@@ -63,6 +63,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".AlarmOff"
+            android:exported="false" />
+
+        <receiver
             android:name=".DayWidget"
             android:exported="false"
             android:label="Stundenblick heute">

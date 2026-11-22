@@ -151,7 +151,7 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
                         else { alarm = on; repo.alarm = on; ChangeJob.schedule(ctx, on || repo.notify) }
                     }, enabled = repo.own.value != null)
                 }
-                Text("EVA heißt eigenverantwortliches Arbeiten. Klingelt wie ein Wecker, auch auf lautlos, und zeigt bei gesperrtem Handy einen Alarm-Bildschirm. Aus mit „Aus“ oder durch Antippen oder Wegwischen der Meldung. Prüft einmal pro Stunde, nur mit Netz.",
+                Text("EVA heißt eigenverantwortliches Arbeiten. Klingelt wie ein Wecker, auch auf lautlos, und zeigt bei gesperrtem Handy einen Alarm-Bildschirm. Aus mit „Aus“ oder durch Antippen oder Wegwischen der Meldung. Nach 10 Minuten hört er von selbst auf, die Meldung bleibt. Prüft einmal pro Stunde, nur mit Netz.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                 if (alarm) {
                     var from by remember { mutableStateOf(repo.alarmFrom) }
