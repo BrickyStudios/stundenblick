@@ -88,6 +88,7 @@ class ChangeJob : JobService() {
                 enableVibration(true)
             })
             val open = PendingIntent.getActivity(ctx, 3, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+            val screen = PendingIntent.getActivity(ctx, 5, AlarmActivity.intent(ctx, messages), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
             val n = Notification.Builder(ctx, ALARM)
                 .setSmallIcon(R.drawable.ic_stat)
                 .setContentTitle(if (messages.size == 1) "Stundenplan-Alarm" else "Stundenplan-Alarm: ${messages.size} Stunden")
@@ -95,6 +96,7 @@ class ChangeJob : JobService() {
                 .setStyle(Notification.BigTextStyle().bigText(messages.joinToString("\n")))
                 .setCategory(Notification.CATEGORY_ALARM)
                 .setContentIntent(open)
+                .setFullScreenIntent(screen, true) // locked or screen off: the alarm screen; phone in use: only the banner
                 .setAutoCancel(true)
                 .build()
             n.flags = n.flags or Notification.FLAG_INSISTENT // repeats the sound until the alarm is dealt with
@@ -102,7 +104,7 @@ class ChangeJob : JobService() {
         }
 
         private const val ALARM = "alarm"
-        private const val ALARM_NOTE = 4712
+        const val ALARM_NOTE = 4712
     }
 }
 

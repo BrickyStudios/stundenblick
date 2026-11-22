@@ -10,6 +10,8 @@
     <!-- the alarm that waited for its hours rings on time; Android 13+ grants USE_EXACT_ALARM at install, 12 the other one -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- the alarm screen over the lock screen; Android 14+ lets the user switch it off (Einstellungen → Apps → Spezieller App-Zugriff) -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
@@ -37,6 +39,15 @@
                 <data android:scheme="untis" android:host="setschool" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".AlarmActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:turnScreenOn="true" />
 
         <service
             android:name=".ChangeJob"

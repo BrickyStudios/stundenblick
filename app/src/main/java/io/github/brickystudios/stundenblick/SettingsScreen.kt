@@ -151,7 +151,7 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
                         else { alarm = on; repo.alarm = on; ChangeJob.schedule(ctx, on || repo.notify) }
                     }, enabled = repo.own.value != null)
                 }
-                Text("EVA heißt eigenverantwortliches Arbeiten. Klingelt wie ein Wecker, auch auf lautlos, bis du die Meldung antippst oder wegwischst. Prüft einmal pro Stunde, nur mit Netz.",
+                Text("EVA heißt eigenverantwortliches Arbeiten. Klingelt wie ein Wecker, auch auf lautlos, und zeigt bei gesperrtem Handy einen Alarm-Bildschirm. Aus mit „Aus“ oder durch Antippen oder Wegwischen der Meldung. Prüft einmal pro Stunde, nur mit Netz.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                 if (alarm) {
                     var from by remember { mutableStateOf(repo.alarmFrom) }
@@ -172,7 +172,17 @@ fun SettingsScreen(repo: Repo, current: Element?, onBack: () -> Unit, onSetOwn: 
                     }
                     Text("Was außerhalb davon kommt, klingelt, sobald es wieder darf (nach der letzten Stunde oder morgens), falls es dann noch gilt. Gleiche Uhrzeit bei von und bis: rund um die Uhr.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-                    TextButton(onClick = { ChangeJob.ring(ctx, listOf("Probealarm: so klingt es bei Entfall, Foyer oder EVA.")) }) { Text("Probealarm") }
+                    // Android 14+: without this right the alarm stays a banner and the screen stays off
+                    if (Build.VERSION.SDK_INT >= 34 && !ctx.getSystemService(android.app.NotificationManager::class.java).canUseFullScreenIntent()) {
+                        TextButton(onClick = { ctx.startActivity(Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:${ctx.packageName}"))) }) {
+                            Text("Alarm-Bildschirm erlauben")
+                        }
+                    }
+                    TextButton(onClick = {
+                        val probe = listOf("Probealarm: so klingt es bei Entfall, Foyer oder EVA.")
+                        ChangeJob.ring(ctx, probe)
+                        ctx.startActivity(AlarmActivity.intent(ctx, probe)) // the app is open, so Android would show only the banner
+                    }) { Text("Probealarm") }
                 }
             }
 

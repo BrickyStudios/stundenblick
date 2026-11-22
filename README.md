@@ -58,7 +58,7 @@ In Stundenblick steckt außer den Android-Bausteinen (AndroidX, Jetpack Compose)
 - **Raumfinder** wie bei BetterUntis: einzelne Räume wählen und sehen, ob sie jetzt frei sind und bis wann.
 - **Info Center** wie bei BetterUntis: Klausuren, Hausaufgaben zum Abhaken, Nachricht des Tages, Sprechstunden mit Mail und Telefon, eigene Fehlzeiten. Was die Schule nicht freigibt, taucht nicht auf.
 - **Pausen-Info** wie bei BetterUntis: in jeder Pause still die nächste Stunde mit Raum.
-- **Alarm** (abschaltbar, aus ab Werk): klingelt wie ein Wecker, auch auf lautlos, sobald eine Stunde entfällt, ins Foyer verlegt wird oder EVA (eigenverantwortliches Arbeiten) eingetragen wird, bis du ihn ausstellst. Nur in deinen Uhrzeiten (ab Werk 6 bis 22 Uhr) und auf Wunsch nicht während des Unterrichts; was dazwischen kommt, klingelt danach, falls es dann noch gilt.
+- **Alarm** (abschaltbar, aus ab Werk): klingelt wie ein Wecker, auch auf lautlos und bei gesperrtem Handy mit eigenem Alarm-Bildschirm, sobald eine Stunde entfällt, ins Foyer verlegt wird oder EVA (eigenverantwortliches Arbeiten) eingetragen wird, bis du ihn ausstellst. Nur in deinen Uhrzeiten (ab Werk 6 bis 22 Uhr) und auf Wunsch nicht während des Unterrichts; was dazwischen kommt, klingelt danach, falls es dann noch gilt.
 - **Stunden-Details:** Stundeninhalt, Hausaufgaben und Infotext, soweit die Schule sie einträgt.
 - **Kurse ausblenden:** in den Einstellungen oder per langem Druck auf eine Stunde, mit Rückgängig.
 - **Offline, Meldungen, Widget:** geladene Wochen bleiben gespeichert; einmal pro Stunde prüft die App diese und die nächste Woche und meldet neue Ausfälle, Vertretungen, Raumänderungen und Klausuren; das Widget zeigt den Tag.
